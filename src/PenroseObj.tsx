@@ -13,13 +13,18 @@ interface PenroseObjProps {
 export default function PenroseObj({
   color = '#ffbb00',
   position = [0, 0, 0],
-  rotation = [-0.95, -3.05, -0.72]
+  rotation = [-0.952, -3.05, -0.72]
 }: PenroseObjProps) {
   const ref = useRef<THREE.Mesh>(null)
   const geometry = useLoader(STLLoader, '/models/Penrose_object.stl')
 
   // Créer le matériau avec la couleur passée en prop (mémorisé pour éviter les recréations)
-  const material = useMemo(() => new THREE.MeshToonMaterial({ color }), [color])
+  // MeshStandardMaterial permet des transitions de lumière progressives et lisses
+  const material = useMemo(() => new THREE.MeshStandardMaterial({
+    color,
+    roughness: 0.4,
+    metalness: 0.1,
+  }), [color])
 
   // Centrer la géométrie
   useEffect(() => {

@@ -2,9 +2,16 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import PenroseObj from './PenroseObj'
+import VectorLogo3D from './VectorLogo3D'
 import { useRef, useEffect, useState } from 'react'
 import * as THREE from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
+
+interface PointLightSettings {
+  position: [number, number, number]
+  intensity: number
+  color: string
+}
 
 interface LightSettings {
   directional: {
@@ -12,11 +19,10 @@ interface LightSettings {
     intensity: number
     color: string
   }
-  point: {
-    position: [number, number, number]
-    intensity: number
-    color: string
-  }
+  point1: PointLightSettings
+  point2: PointLightSettings
+  point3: PointLightSettings
+  point4: PointLightSettings
 }
 
 function ResettableControls() {
@@ -54,24 +60,160 @@ function ResettableControls() {
   return <OrbitControls ref={controlsRef} enableZoom={false} enableRotate={true} enablePan={true} />
 }
 
+// Reusable component for Point Light UI controls
+function PointLightControls({ 
+  title, 
+  light, 
+  onUpdate 
+}: { 
+  title: string
+  light: PointLightSettings
+  onUpdate: (key: keyof PointLightSettings, value: [number, number, number] | number | string) => void
+}) {
+  return (
+    <>
+      <h3 style={{ marginBottom: '15px', fontSize: '16px' }}>{title}</h3>
+      
+      {/* Position X */}
+      <div style={{ marginBottom: '12px' }}>
+        <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px', fontSize: '11px' }}>
+          <span>Position X</span>
+          <input
+            type="number"
+            step="0.01"
+            value={light.position[0]}
+            onChange={(e) => onUpdate('position', [Number(e.target.value), light.position[1], light.position[2]])}
+            style={{ width: '60px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 5px', fontSize: '11px' }}
+          />
+        </label>
+        <input
+          type="range"
+          min="-50"
+          max="50"
+          step="0.01"
+          value={light.position[0]}
+          onChange={(e) => onUpdate('position', [Number(e.target.value), light.position[1], light.position[2]])}
+          style={{ width: '100%', cursor: 'pointer' }}
+        />
+      </div>
+      
+      {/* Position Y */}
+      <div style={{ marginBottom: '12px' }}>
+        <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px', fontSize: '11px' }}>
+          <span>Position Y</span>
+          <input
+            type="number"
+            step="0.01"
+            value={light.position[1]}
+            onChange={(e) => onUpdate('position', [light.position[0], Number(e.target.value), light.position[2]])}
+            style={{ width: '60px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 5px', fontSize: '11px' }}
+          />
+        </label>
+        <input
+          type="range"
+          min="-50"
+          max="50"
+          step="0.01"
+          value={light.position[1]}
+          onChange={(e) => onUpdate('position', [light.position[0], Number(e.target.value), light.position[2]])}
+          style={{ width: '100%', cursor: 'pointer' }}
+        />
+      </div>
+      
+      {/* Position Z */}
+      <div style={{ marginBottom: '12px' }}>
+        <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px', fontSize: '11px' }}>
+          <span>Position Z</span>
+          <input
+            type="number"
+            step="0.01"
+            value={light.position[2]}
+            onChange={(e) => onUpdate('position', [light.position[0], light.position[1], Number(e.target.value)])}
+            style={{ width: '60px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 5px', fontSize: '11px' }}
+          />
+        </label>
+        <input
+          type="range"
+          min="-50"
+          max="50"
+          step="0.01"
+          value={light.position[2]}
+          onChange={(e) => onUpdate('position', [light.position[0], light.position[1], Number(e.target.value)])}
+          style={{ width: '100%', cursor: 'pointer' }}
+        />
+      </div>
+      
+      {/* Intensity */}
+      <div style={{ marginBottom: '12px' }}>
+        <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px', fontSize: '11px' }}>
+          <span>Intensity</span>
+          <input
+            type="number"
+            step="0.01"
+            value={light.intensity}
+            onChange={(e) => onUpdate('intensity', Number(e.target.value))}
+            style={{ width: '60px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 5px', fontSize: '11px' }}
+          />
+        </label>
+        <input
+          type="range"
+          min="0"
+          max="200"
+          step="0.01"
+          value={light.intensity}
+          onChange={(e) => onUpdate('intensity', Number(e.target.value))}
+          style={{ width: '100%', cursor: 'pointer' }}
+        />
+      </div>
+      
+      {/* Color */}
+      <div style={{ marginBottom: '15px' }}>
+        <label style={{ display: 'block', marginBottom: '5px', fontSize: '11px' }}>Color</label>
+        <input
+          type="color"
+          value={light.color.startsWith('#') ? light.color : (light.color === 'red' ? '#ff0000' : light.color === 'green' ? '#00ff00' : light.color === 'blue' ? '#0000ff' : light.color)}
+          onChange={(e) => onUpdate('color', e.target.value)}
+          style={{ width: '100%', height: '35px', backgroundColor: '#222', border: '1px solid #555', borderRadius: '4px', cursor: 'pointer' }}
+        />
+      </div>
+    </>
+  )
+}
+
 export default function Scene() {
   const [lights, setLights] = useState<LightSettings>({
     directional: {
-      position: [10, 0, 10],
-      intensity: 4,
+      position: [-22, 7, 13],
+      intensity: 4.96,
+      color: '#ffe95c'
+    },
+    point1: {
+      position: [-0.25, 1.21, 0.68],
+      intensity: 1.88,
+      color: '#fbff00'
+    },
+    point2: {
+      position: [6, -1.77, 2.03],
+      intensity: 27.9,
       color: '#ffbb00'
     },
-    point: {
-      position: [-10, 10, 0],
-      intensity: 90,
-      color: 'red'
+    point3: {
+      position: [3.42, 5.82, -15.45],
+      intensity: 0,
+      color: '#ff0000'
+    },
+    point4: {
+      position: [0, -2, -2],
+      intensity: 0,
+      color: '#ff0000'
     }
   })
 
-  const [modelColor, setModelColor] = useState('#ffbb00')
+  const [modelColor, setModelColor] = useState('#ffab1a')
   const [modelPosition, setModelPosition] = useState<[number, number, number]>([0, 0, 0])
-  const [modelRotation, setModelRotation] = useState<[number, number, number]>([-0.95, -3.05, -0.72])
+  const [modelRotation, setModelRotation] = useState<[number, number, number]>([-0.952, -3.05, -0.72])
   const [copySuccess, setCopySuccess] = useState(false)
+  const [showControls, setShowControls] = useState(true)
 
   const updateDirectionalLight = (key: keyof LightSettings['directional'], value: [number, number, number] | number | string) => {
     setLights(prev => ({
@@ -80,16 +222,19 @@ export default function Scene() {
     }))
   }
 
-  const updatePointLight = (key: keyof LightSettings['point'], value: [number, number, number] | number | string) => {
+  const updatePointLight = (pointKey: 'point1' | 'point2' | 'point3' | 'point4', key: keyof PointLightSettings, value: [number, number, number] | number | string) => {
     setLights(prev => ({
       ...prev,
-      point: { ...prev.point, [key]: value }
+      [pointKey]: { ...prev[pointKey], [key]: value }
     }))
   }
 
   const copyToClipboard = () => {
     const lightConfig = `<directionalLight position={[${lights.directional.position.join(', ')}]} intensity={${lights.directional.intensity}} color={'${lights.directional.color}'} />
-<pointLight position={[${lights.point.position.join(', ')}]} intensity={${lights.point.intensity}} color={'${lights.point.color}'} />
+<pointLight position={[${lights.point1.position.join(', ')}]} intensity={${lights.point1.intensity}} color={'${lights.point1.color}'} />
+<pointLight position={[${lights.point2.position.join(', ')}]} intensity={${lights.point2.intensity}} color={'${lights.point2.color}'} />
+<pointLight position={[${lights.point3.position.join(', ')}]} intensity={${lights.point3.intensity}} color={'${lights.point3.color}'} />
+<pointLight position={[${lights.point4.position.join(', ')}]} intensity={${lights.point4.intensity}} color={'${lights.point4.color}'} />
 <PenroseObj color={'${modelColor}'} position={[${modelPosition.join(', ')}]} rotation={[${modelRotation.join(', ')}]} />`
     
     navigator.clipboard.writeText(lightConfig).then(() => {
@@ -112,43 +257,95 @@ export default function Scene() {
           color={lights.directional.color}
         />
         <pointLight
-          position={lights.point.position}
-          intensity={lights.point.intensity}
-          color={lights.point.color}
+          position={lights.point1.position}
+          intensity={lights.point1.intensity}
+          color={lights.point1.color}
+        />
+        <pointLight
+          position={lights.point2.position}
+          intensity={lights.point2.intensity}
+          color={lights.point2.color}
+        />
+        <pointLight
+          position={lights.point3.position}
+          intensity={lights.point3.intensity}
+          color={lights.point3.color}
+        />
+        <pointLight
+          position={lights.point4.position}
+          intensity={lights.point4.intensity}
+          color={lights.point4.color}
         />
         <PenroseObj color={modelColor} position={modelPosition} rotation={modelRotation} />
+        <VectorLogo3D color={modelColor} position={[0, 2.55, -10]} scale={0.02} />
         <ResettableControls />
       </Canvas>
 
-      {/* Control Panel - Always Visible */}
-      <div style={{
-        position: 'absolute',
-        top: '10px',
-        right: '10px',
-        backgroundColor: 'rgba(0, 0, 0, 0.85)',
-        color: 'white',
-        padding: '15px',
-        borderRadius: '10px',
-        maxHeight: 'calc(100vh - 20px)',
-        overflowY: 'auto',
-        width: '320px',
-        zIndex: 1000,
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '13px'
-      }}>
+      {/* Toggle Button */}
+      <button
+        onClick={() => setShowControls(!showControls)}
+        style={{
+          position: 'absolute',
+          top: '10px',
+          right: '10px',
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          color: 'white',
+          border: '1px solid #555',
+          borderRadius: '8px',
+          padding: '10px 15px',
+          cursor: 'pointer',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          zIndex: 1001,
+          transition: 'all 0.3s',
+          fontFamily: 'Arial, sans-serif'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.95)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.85)'
+        }}
+      >
+        {showControls ? '✕ Masquer' : '⚙ Paramètres'}
+      </button>
+
+      {/* Control Panel */}
+      {showControls && (
+        <div style={{
+          position: 'absolute',
+          top: '60px',
+          right: '10px',
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          color: 'white',
+          padding: '15px',
+          borderRadius: '10px',
+          maxHeight: 'calc(100vh - 80px)',
+          overflowY: 'auto',
+          width: '320px',
+          zIndex: 1000,
+          fontFamily: 'Arial, sans-serif',
+          fontSize: '13px'
+        }}>
         <h3 style={{ marginTop: 0, marginBottom: '15px', fontSize: '16px' }}>Modèle 3D</h3>
         
         {/* Position X */}
         <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '11px' }}>
+          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px', fontSize: '11px' }}>
             <span>Position X</span>
-            <span>{modelPosition[0].toFixed(2)}</span>
+            <input
+              type="number"
+              step="0.01"
+              value={modelPosition[0]}
+              onChange={(e) => setModelPosition([Number(e.target.value), modelPosition[1], modelPosition[2]])}
+              style={{ width: '60px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 5px', fontSize: '11px' }}
+            />
           </label>
           <input
             type="range"
             min="-20"
             max="20"
-            step="0.1"
+            step="0.01"
             value={modelPosition[0]}
             onChange={(e) => setModelPosition([Number(e.target.value), modelPosition[1], modelPosition[2]])}
             style={{ width: '100%', cursor: 'pointer' }}
@@ -157,15 +354,21 @@ export default function Scene() {
 
         {/* Position Y */}
         <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '11px' }}>
+          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px', fontSize: '11px' }}>
             <span>Position Y</span>
-            <span>{modelPosition[1].toFixed(2)}</span>
+            <input
+              type="number"
+              step="0.01"
+              value={modelPosition[1]}
+              onChange={(e) => setModelPosition([modelPosition[0], Number(e.target.value), modelPosition[2]])}
+              style={{ width: '60px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 5px', fontSize: '11px' }}
+            />
           </label>
           <input
             type="range"
             min="-20"
             max="20"
-            step="0.1"
+            step="0.01"
             value={modelPosition[1]}
             onChange={(e) => setModelPosition([modelPosition[0], Number(e.target.value), modelPosition[2]])}
             style={{ width: '100%', cursor: 'pointer' }}
@@ -174,15 +377,21 @@ export default function Scene() {
 
         {/* Position Z */}
         <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '11px' }}>
+          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px', fontSize: '11px' }}>
             <span>Position Z</span>
-            <span>{modelPosition[2].toFixed(2)}</span>
+            <input
+              type="number"
+              step="0.01"
+              value={modelPosition[2]}
+              onChange={(e) => setModelPosition([modelPosition[0], modelPosition[1], Number(e.target.value)])}
+              style={{ width: '60px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 5px', fontSize: '11px' }}
+            />
           </label>
           <input
             type="range"
             min="-20"
             max="20"
-            step="0.1"
+            step="0.01"
             value={modelPosition[2]}
             onChange={(e) => setModelPosition([modelPosition[0], modelPosition[1], Number(e.target.value)])}
             style={{ width: '100%', cursor: 'pointer' }}
@@ -191,9 +400,15 @@ export default function Scene() {
 
         {/* Rotation X */}
         <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '11px' }}>
+          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px', fontSize: '11px' }}>
             <span>Rotation X</span>
-            <span>{modelRotation[0].toFixed(2)}</span>
+            <input
+              type="number"
+              step="0.01"
+              value={modelRotation[0]}
+              onChange={(e) => setModelRotation([Number(e.target.value), modelRotation[1], modelRotation[2]])}
+              style={{ width: '60px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 5px', fontSize: '11px' }}
+            />
           </label>
           <input
             type="range"
@@ -208,9 +423,15 @@ export default function Scene() {
 
         {/* Rotation Y */}
         <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '11px' }}>
+          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px', fontSize: '11px' }}>
             <span>Rotation Y</span>
-            <span>{modelRotation[1].toFixed(2)}</span>
+            <input
+              type="number"
+              step="0.01"
+              value={modelRotation[1]}
+              onChange={(e) => setModelRotation([modelRotation[0], Number(e.target.value), modelRotation[2]])}
+              style={{ width: '60px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 5px', fontSize: '11px' }}
+            />
           </label>
           <input
             type="range"
@@ -225,9 +446,15 @@ export default function Scene() {
 
         {/* Rotation Z */}
         <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '11px' }}>
+          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px', fontSize: '11px' }}>
             <span>Rotation Z</span>
-            <span>{modelRotation[2].toFixed(2)}</span>
+            <input
+              type="number"
+              step="0.01"
+              value={modelRotation[2]}
+              onChange={(e) => setModelRotation([modelRotation[0], modelRotation[1], Number(e.target.value)])}
+              style={{ width: '60px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 5px', fontSize: '11px' }}
+            />
           </label>
           <input
             type="range"
@@ -257,15 +484,21 @@ export default function Scene() {
         
         {/* Dir Position X */}
         <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '11px' }}>
+          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px', fontSize: '11px' }}>
             <span>Position X</span>
-            <span>{lights.directional.position[0].toFixed(1)}</span>
+            <input
+              type="number"
+              step="0.01"
+              value={lights.directional.position[0]}
+              onChange={(e) => updateDirectionalLight('position', [Number(e.target.value), lights.directional.position[1], lights.directional.position[2]])}
+              style={{ width: '60px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 5px', fontSize: '11px' }}
+            />
           </label>
           <input
             type="range"
             min="-50"
             max="50"
-            step="1"
+            step="0.01"
             value={lights.directional.position[0]}
             onChange={(e) => updateDirectionalLight('position', [Number(e.target.value), lights.directional.position[1], lights.directional.position[2]])}
             style={{ width: '100%', cursor: 'pointer' }}
@@ -274,15 +507,21 @@ export default function Scene() {
         
         {/* Dir Position Y */}
         <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '11px' }}>
+          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px', fontSize: '11px' }}>
             <span>Position Y</span>
-            <span>{lights.directional.position[1].toFixed(1)}</span>
+            <input
+              type="number"
+              step="0.01"
+              value={lights.directional.position[1]}
+              onChange={(e) => updateDirectionalLight('position', [lights.directional.position[0], Number(e.target.value), lights.directional.position[2]])}
+              style={{ width: '60px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 5px', fontSize: '11px' }}
+            />
           </label>
           <input
             type="range"
             min="-50"
             max="50"
-            step="1"
+            step="0.01"
             value={lights.directional.position[1]}
             onChange={(e) => updateDirectionalLight('position', [lights.directional.position[0], Number(e.target.value), lights.directional.position[2]])}
             style={{ width: '100%', cursor: 'pointer' }}
@@ -291,15 +530,21 @@ export default function Scene() {
         
         {/* Dir Position Z */}
         <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '11px' }}>
+          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px', fontSize: '11px' }}>
             <span>Position Z</span>
-            <span>{lights.directional.position[2].toFixed(1)}</span>
+            <input
+              type="number"
+              step="0.01"
+              value={lights.directional.position[2]}
+              onChange={(e) => updateDirectionalLight('position', [lights.directional.position[0], lights.directional.position[1], Number(e.target.value)])}
+              style={{ width: '60px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 5px', fontSize: '11px' }}
+            />
           </label>
           <input
             type="range"
             min="-50"
             max="50"
-            step="1"
+            step="0.01"
             value={lights.directional.position[2]}
             onChange={(e) => updateDirectionalLight('position', [lights.directional.position[0], lights.directional.position[1], Number(e.target.value)])}
             style={{ width: '100%', cursor: 'pointer' }}
@@ -308,15 +553,21 @@ export default function Scene() {
         
         {/* Dir Intensity */}
         <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '11px' }}>
+          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px', fontSize: '11px' }}>
             <span>Intensity</span>
-            <span>{lights.directional.intensity.toFixed(1)}</span>
+            <input
+              type="number"
+              step="0.01"
+              value={lights.directional.intensity}
+              onChange={(e) => updateDirectionalLight('intensity', Number(e.target.value))}
+              style={{ width: '60px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 5px', fontSize: '11px' }}
+            />
           </label>
           <input
             type="range"
             min="0"
             max="10"
-            step="0.1"
+            step="0.01"
             value={lights.directional.intensity}
             onChange={(e) => updateDirectionalLight('intensity', Number(e.target.value))}
             style={{ width: '100%', cursor: 'pointer' }}
@@ -336,86 +587,39 @@ export default function Scene() {
 
         <hr style={{ border: 'none', borderTop: '1px solid #555', margin: '15px 0' }} />
 
-        <h3 style={{ marginBottom: '15px', fontSize: '16px' }}>Point Light</h3>
-        
-        {/* Point Position X */}
-        <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '11px' }}>
-            <span>Position X</span>
-            <span>{lights.point.position[0].toFixed(1)}</span>
-          </label>
-          <input
-            type="range"
-            min="-50"
-            max="50"
-            step="1"
-            value={lights.point.position[0]}
-            onChange={(e) => updatePointLight('position', [Number(e.target.value), lights.point.position[1], lights.point.position[2]])}
-            style={{ width: '100%', cursor: 'pointer' }}
-          />
-        </div>
-        
-        {/* Point Position Y */}
-        <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '11px' }}>
-            <span>Position Y</span>
-            <span>{lights.point.position[1].toFixed(1)}</span>
-          </label>
-          <input
-            type="range"
-            min="-50"
-            max="50"
-            step="1"
-            value={lights.point.position[1]}
-            onChange={(e) => updatePointLight('position', [lights.point.position[0], Number(e.target.value), lights.point.position[2]])}
-            style={{ width: '100%', cursor: 'pointer' }}
-          />
-        </div>
-        
-        {/* Point Position Z */}
-        <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '11px' }}>
-            <span>Position Z</span>
-            <span>{lights.point.position[2].toFixed(1)}</span>
-          </label>
-          <input
-            type="range"
-            min="-50"
-            max="50"
-            step="1"
-            value={lights.point.position[2]}
-            onChange={(e) => updatePointLight('position', [lights.point.position[0], lights.point.position[1], Number(e.target.value)])}
-            style={{ width: '100%', cursor: 'pointer' }}
-          />
-        </div>
-        
-        {/* Point Intensity */}
-        <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '11px' }}>
-            <span>Intensity</span>
-            <span>{lights.point.intensity.toFixed(0)}</span>
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="200"
-            step="1"
-            value={lights.point.intensity}
-            onChange={(e) => updatePointLight('intensity', Number(e.target.value))}
-            style={{ width: '100%', cursor: 'pointer' }}
-          />
-        </div>
-        
-        {/* Point Color */}
-        <div style={{ marginBottom: '15px' }}>
-          <label style={{ display: 'block', marginBottom: '5px', fontSize: '11px' }}>Color</label>
-          <input
-            type="color"
-            value={lights.point.color === 'red' ? '#ff0000' : lights.point.color}
-            onChange={(e) => updatePointLight('color', e.target.value)}
-            style={{ width: '100%', height: '35px', backgroundColor: '#222', border: '1px solid #555', borderRadius: '4px', cursor: 'pointer' }}
-          />
-        </div>
+        {/* Point Light 1 */}
+        <PointLightControls
+          title="Point Light 1"
+          light={lights.point1}
+          onUpdate={(key, value) => updatePointLight('point1', key, value)}
+        />
+
+        <hr style={{ border: 'none', borderTop: '1px solid #555', margin: '15px 0' }} />
+
+        {/* Point Light 2 */}
+        <PointLightControls
+          title="Point Light 2"
+          light={lights.point2}
+          onUpdate={(key, value) => updatePointLight('point2', key, value)}
+        />
+
+        <hr style={{ border: 'none', borderTop: '1px solid #555', margin: '15px 0' }} />
+
+        {/* Point Light 3 */}
+        <PointLightControls
+          title="Point Light 3"
+          light={lights.point3}
+          onUpdate={(key, value) => updatePointLight('point3', key, value)}
+        />
+
+        <hr style={{ border: 'none', borderTop: '1px solid #555', margin: '15px 0' }} />
+
+        {/* Point Light 4 */}
+        <PointLightControls
+          title="Point Light 4"
+          light={lights.point4}
+          onUpdate={(key, value) => updatePointLight('point4', key, value)}
+        />
 
         <button
           onClick={copyToClipboard}
@@ -430,12 +634,13 @@ export default function Scene() {
             fontSize: '13px',
             fontWeight: 'bold',
             transition: 'background-color 0.3s',
-            marginTop: '5px'
+            marginTop: '15px'
           }}
         >
           {copySuccess ? '✓ Copié!' : 'Copier les valeurs'}
         </button>
-      </div>
+        </div>
+      )}
     </div>
   )
 }
