@@ -308,7 +308,7 @@ function App() {
           strokeWidth={strokeWidth}
           strokeOpacity={strokeOpacity}
           fillOpacity={fillOpacity}
-          backdropBlur={backdropBlur}
+          backdropBlur={isRotated ? '0px' : backdropBlur}
           blendMode={blendMode}
           glowColor={glowColor}
           glowOpacity={glowOpacity}
