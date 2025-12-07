@@ -5,7 +5,7 @@ import Scene from './Scene'
 import VectorLogotype from './VectorLogotype'
 
 const title = {
-  fontSize: '1.5rem',
+  fontSize: '1.4rem',
   fontWeight: 600,
   position: 'fixed' as const,
   top: '1rem',
