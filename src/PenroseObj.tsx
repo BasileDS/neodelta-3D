@@ -8,12 +8,14 @@ interface PenroseObjProps {
   color?: string
   position?: [number, number, number]
   rotation?: [number, number, number]
+  scale?: number
 }
 
 export default function PenroseObj({
   color = '#ffbb00',
   position = [0, 0, 0],
-  rotation = [-0.952, -3.05, -0.72]
+  rotation = [-0.952, -3.05, -0.72],
+  scale = 50
 }: PenroseObjProps) {
   const ref = useRef<THREE.Mesh>(null)
   const geometry = useLoader(STLLoader, '/models/Penrose_object.stl')
@@ -37,7 +39,7 @@ export default function PenroseObj({
       ref={ref}
       geometry={geometry}
       material={material}
-      scale={[50, 50, 50]}
+      scale={[scale, scale, scale]}
       rotation={rotation}
       position={position}
     />
