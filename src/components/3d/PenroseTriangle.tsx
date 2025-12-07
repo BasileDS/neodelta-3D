@@ -41,7 +41,7 @@ export default function PenroseScene() {
       <ambientLight intensity={1.2} />
       <directionalLight position={[10, 10, 10]} />
       <PenroseTriangle />
-      {/* Verrouille la vue pour préserver l’illusion */}
+      {/* Verrouille la vue pour préserver l'illusion */}
       <OrbitControls enableRotate={false} enableZoom={false} enablePan={false} />
     </Canvas>
   );
