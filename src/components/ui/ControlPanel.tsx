@@ -1,8 +1,38 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import type React from 'react'
 import type { LightSettings, LogoControls, PointLightSettings } from '../../types'
 import { CollapsibleSection } from './CollapsibleSection'
 import { PointLightControls } from './PointLightControls'
+
+interface ConfigurationData {
+  // Logo settings
+  fillColor: string
+  strokeWidth: string
+  strokeOpacity: number
+  fillOpacity: number
+  backdropBlur: string
+  blendMode: string
+  glowColor: string
+  glowOpacity: number
+  glowIntensity: number
+  
+  // Interactive effects
+  enableDynamicGlow: boolean
+  invertGlow: boolean
+  enableRotation: boolean
+  enablePositioning: boolean
+  displacementCoeff: number
+  rotationCoeff: number
+  
+  // Light settings
+  lightSettings: LightSettings
+  
+  // 3D Model
+  modelColor: string
+  modelPosition: [number, number, number]
+  modelRotation: [number, number, number]
+  modelScale: number
+}
 
 interface ControlPanelProps {
   // Light settings
@@ -69,6 +99,9 @@ export function ControlPanel({
   setModelScale
 }: ControlPanelProps) {
   const [copySuccess, setCopySuccess] = useState(false)
+  const [exportSuccess, setExportSuccess] = useState(false)
+  const [importSuccess, setImportSuccess] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   
   // Collapsible section states
   const [openSections, setOpenSections] = useState({
@@ -84,6 +117,110 @@ export function ControlPanel({
   
   const toggleSection = (section: keyof typeof openSections) => {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }))
+  }
+
+  // Export configuration to JSON
+  const exportConfiguration = () => {
+    const config: ConfigurationData = {
+      // Logo settings
+      fillColor: logoControls.fillColor,
+      strokeWidth: logoControls.strokeWidth,
+      strokeOpacity: logoControls.strokeOpacity,
+      fillOpacity: logoControls.fillOpacity,
+      backdropBlur: logoControls.backdropBlur,
+      blendMode: logoControls.blendMode as string,
+      glowColor: logoControls.glowColor,
+      glowOpacity: logoControls.glowOpacity,
+      glowIntensity: logoControls.glowIntensity,
+      
+      // Interactive effects
+      enableDynamicGlow,
+      invertGlow,
+      enableRotation,
+      enablePositioning,
+      displacementCoeff,
+      rotationCoeff,
+      
+      // Light settings
+      lightSettings,
+      
+      // 3D Model
+      modelColor,
+      modelPosition,
+      modelRotation,
+      modelScale
+    }
+
+    const jsonString = JSON.stringify(config, null, 2)
+    const blob = new Blob([jsonString], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `neodelta-config-${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    setExportSuccess(true)
+    setTimeout(() => setExportSuccess(false), 2000)
+  }
+
+  // Import configuration from JSON
+  const importConfiguration = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const config = JSON.parse(e.target?.result as string) as ConfigurationData
+
+        // Apply logo settings
+        if (config.fillColor !== undefined) logoControls.setFillColor(config.fillColor)
+        if (config.strokeWidth !== undefined) logoControls.setStrokeWidth(config.strokeWidth)
+        if (config.strokeOpacity !== undefined) logoControls.setStrokeOpacity(config.strokeOpacity)
+        if (config.fillOpacity !== undefined) logoControls.setFillOpacity(config.fillOpacity)
+        if (config.backdropBlur !== undefined) logoControls.setBackdropBlur(config.backdropBlur)
+        if (config.blendMode !== undefined) logoControls.setBlendMode(config.blendMode as React.CSSProperties['mixBlendMode'])
+        if (config.glowColor !== undefined) logoControls.setGlowColor(config.glowColor)
+        if (config.glowOpacity !== undefined) logoControls.setGlowOpacity(config.glowOpacity)
+        if (config.glowIntensity !== undefined) logoControls.setGlowIntensity(config.glowIntensity)
+
+        // Apply interactive effects
+        if (config.enableDynamicGlow !== undefined) setEnableDynamicGlow(config.enableDynamicGlow)
+        if (config.invertGlow !== undefined) setInvertGlow(config.invertGlow)
+        if (config.enableRotation !== undefined) setEnableRotation(config.enableRotation)
+        if (config.enablePositioning !== undefined) setEnablePositioning(config.enablePositioning)
+        if (config.displacementCoeff !== undefined) setDisplacementCoeff(config.displacementCoeff)
+        if (config.rotationCoeff !== undefined) setRotationCoeff(config.rotationCoeff)
+
+        // Apply light settings
+        if (config.lightSettings !== undefined) setLightSettings(config.lightSettings)
+
+        // Apply 3D model settings
+        if (config.modelColor !== undefined) setModelColor(config.modelColor)
+        if (config.modelPosition !== undefined) setModelPosition(config.modelPosition)
+        if (config.modelRotation !== undefined) setModelRotation(config.modelRotation)
+        if (config.modelScale !== undefined) setModelScale(config.modelScale)
+
+        setImportSuccess(true)
+        setTimeout(() => setImportSuccess(false), 2000)
+      } catch (error) {
+        console.error('Error parsing configuration file:', error)
+        alert('Erreur lors de l\'importation du fichier de configuration')
+      }
+    }
+    reader.readAsText(file)
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click()
   }
 
   const updateDirectionalLight = (
@@ -774,6 +911,68 @@ export function ControlPanel({
       >
         {copySuccess ? '✓ Copié!' : 'Copier les valeurs'}
       </button>
+
+      {/* Import/Export Configuration Section */}
+      <div style={{
+        marginTop: '10px',
+        borderTop: '1px solid rgba(255, 255, 255, 0.2)',
+        paddingTop: '10px'
+      }}>
+        <div style={{
+          fontSize: '10px',
+          fontWeight: 'bold',
+          marginBottom: '8px',
+          color: 'rgba(255, 255, 255, 0.9)'
+        }}>
+          Configuration
+        </div>
+        
+        <button
+          onClick={exportConfiguration}
+          style={{
+            width: '100%',
+            padding: '8px',
+            backgroundColor: exportSuccess ? '#28a745' : '#17a2b8',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '9px',
+            fontWeight: 'bold',
+            transition: 'background-color 0.3s',
+            marginBottom: '6px'
+          }}
+        >
+          {exportSuccess ? '✓ Exporté!' : '⬇ Exporter (JSON)'}
+        </button>
+
+        <button
+          onClick={triggerFileInput}
+          style={{
+            width: '100%',
+            padding: '8px',
+            backgroundColor: importSuccess ? '#28a745' : '#6c757d',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '9px',
+            fontWeight: 'bold',
+            transition: 'background-color 0.3s'
+          }}
+        >
+          {importSuccess ? '✓ Importé!' : '⬆ Importer (JSON)'}
+        </button>
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          onChange={importConfiguration}
+          style={{ display: 'none' }}
+        />
+      </div>
     </div>
   )
 }
