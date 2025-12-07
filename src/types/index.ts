@@ -44,6 +44,8 @@ export interface LogoControls {
   setGlowColor: (value: string) => void
   glowOpacity: number
   setGlowOpacity: (value: number) => void
+  glowIntensity: number
+  setGlowIntensity: (value: number) => void
 }
 
 /**

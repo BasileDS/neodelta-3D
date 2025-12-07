@@ -20,10 +20,11 @@ function App() {
   const [strokeWidth, setStrokeWidth] = useState('0.5')
   const [strokeOpacity, setStrokeOpacity] = useState(1)
   const [fillOpacity, setFillOpacity] = useState(1)
-  const [backdropBlur, setBackdropBlur] = useState('7.58px')
+  const [backdropBlur, setBackdropBlur] = useState('7px')
   const [blendMode, setBlendMode] = useState<React.CSSProperties['mixBlendMode']>('plus-lighter')
   const [glowColor, setGlowColor] = useState('white')
-  const [glowOpacity, setGlowOpacity] = useState(0.5)
+  const [glowOpacity, setGlowOpacity] = useState(0.66)
+  const [glowIntensity, setGlowIntensity] = useState(2.3)
 
   // Interactive effects state
   const [enableDynamicGlow, setEnableDynamicGlow] = useState(true)
@@ -102,7 +103,9 @@ function App() {
           glowColor,
           setGlowColor,
           glowOpacity,
-          setGlowOpacity
+          setGlowOpacity,
+          glowIntensity,
+          setGlowIntensity
         }}
         mouseRotationX={rotationX}
         mouseRotationY={rotationY}
@@ -132,6 +135,7 @@ function App() {
           blendMode={blendMode}
           glowColor={glowColor}
           glowOpacity={glowOpacity}
+          glowIntensity={glowIntensity}
           glowAngle={glowAngle}
           invertGlow={invertGlow}
           translateX={translateX}

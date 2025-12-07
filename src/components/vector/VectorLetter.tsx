@@ -20,6 +20,7 @@ interface VectorLetterProps {
   blendMode?: React.CSSProperties['mixBlendMode'];
   glowColor?: string;
   glowOpacity?: number;
+  glowIntensity?: number;
   glowDx1?: number;
   glowDy1?: number;
   glowDx2?: number;
@@ -52,6 +53,7 @@ export default function VectorLetter({
   blendMode = "lighten",
   glowColor = "white",
   glowOpacity = 0.3,
+  glowIntensity = 1,
   glowDx1 = 1.31697,
   glowDy1 = 1.79586,
   glowDx2 = 2.32229,
@@ -100,8 +102,8 @@ export default function VectorLetter({
             <feFlood floodOpacity="0" result="BackgroundImageFix"/>
             <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
             <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-            <feOffset dx={glowDx1} dy={glowDy1}/>
-            <feGaussianBlur stdDeviation="2.31"/>
+            <feOffset dx={glowDx1 * glowIntensity} dy={glowDy1 * glowIntensity}/>
+            <feGaussianBlur stdDeviation={2.31 * glowIntensity}/>
             <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1"/>
             <feColorMatrix 
               type="matrix" 
@@ -109,8 +111,8 @@ export default function VectorLetter({
             />
             <feBlend mode="lighten" in2="shape" result="effect1_innerShadow"/>
             <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-            <feOffset dx={glowDx2} dy={glowDy2}/>
-            <feGaussianBlur stdDeviation="4.62"/>
+            <feOffset dx={glowDx2 * glowIntensity} dy={glowDy2 * glowIntensity}/>
+            <feGaussianBlur stdDeviation={4.62 * glowIntensity}/>
             <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1"/>
             <feColorMatrix 
               type="matrix" 

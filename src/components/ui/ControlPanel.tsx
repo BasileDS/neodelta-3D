@@ -378,6 +378,22 @@ export function ControlPanel({
           />
         </div>
 
+        <div style={{ marginBottom: '10px' }}>
+          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
+            <span>Glow Intensity</span>
+            <span>{logoControls.glowIntensity.toFixed(2)}</span>
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="5"
+            step="0.01"
+            value={logoControls.glowIntensity}
+            onChange={(e) => logoControls.setGlowIntensity(parseFloat(e.target.value))}
+            style={{ width: '100%', cursor: 'pointer' }}
+          />
+        </div>
+
         <button
           onClick={() => {
             logoControls.setFillColor('#ffffff53')
@@ -388,6 +404,7 @@ export function ControlPanel({
             logoControls.setBlendMode('plus-lighter')
             logoControls.setGlowColor('white')
             logoControls.setGlowOpacity(0.126)
+            logoControls.setGlowIntensity(1)
           }}
           style={{
             width: '100%',

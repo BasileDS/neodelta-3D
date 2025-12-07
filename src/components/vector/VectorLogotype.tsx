@@ -10,6 +10,7 @@ interface VectorLogotypeProps {
   blendMode?: React.CSSProperties['mixBlendMode'];
   glowColor?: string;
   glowOpacity?: number;
+  glowIntensity?: number;
   glowAngle?: number;
   invertGlow?: boolean;
   translateX?: number;
@@ -157,6 +158,7 @@ export default function VectorLogotype({
   blendMode = "lighten",
   glowColor = "white",
   glowOpacity = 0.3,
+  glowIntensity = 1,
   glowAngle = 45,
   invertGlow = true,
   translateX = 0,
@@ -199,6 +201,7 @@ export default function VectorLogotype({
           blendMode={blendMode}
           glowColor={glowColor}
           glowOpacity={glowOpacity}
+          glowIntensity={glowIntensity}
           glowDx1={glowDx1}
           glowDy1={glowDy1}
           glowDx2={glowDx2}

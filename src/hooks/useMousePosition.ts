@@ -7,16 +7,66 @@ import { useState, useEffect, useRef } from 'react'
  * @returns Object containing current mouse position
  */
 export function useMousePosition(showControls: boolean) {
-  const [mousePos, setMousePos] = useState({ 
-    x: window.innerWidth / 2, 
-    y: window.innerHeight / 2 
+  const [mousePos, setMousePos] = useState({
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2
   })
   
   const animationFrameRef = useRef<number | null>(null)
-  const currentPosRef = useRef({ 
-    x: window.innerWidth / 2, 
-    y: window.innerHeight / 2 
+  const currentPosRef = useRef({
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2
   })
+  const targetPosRef = useRef({
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2
+  })
+
+  // Continuous lerp animation
+  useEffect(() => {
+    const lerpSpeed = 0.15 // Adjust this value for smoother/faster tracking (0.1 = slower, 0.3 = faster)
+    
+    const lerp = (start: number, end: number, factor: number) => {
+      return start + (end - start) * factor
+    }
+    
+    const animateLerp = () => {
+      const current = currentPosRef.current
+      const target = targetPosRef.current
+      
+      const distance = Math.sqrt(
+        Math.pow(target.x - current.x, 2) +
+        Math.pow(target.y - current.y, 2)
+      )
+      
+      // Only update if there's a significant distance
+      if (distance >= 0.5) {
+        const newPos = {
+          x: lerp(current.x, target.x, lerpSpeed),
+          y: lerp(current.y, target.y, lerpSpeed)
+        }
+        
+        currentPosRef.current = newPos
+        setMousePos(newPos)
+      } else if (distance > 0) {
+        // Snap to target when very close
+        currentPosRef.current = { ...target }
+        setMousePos({ ...target })
+      }
+      
+      // Always continue the loop
+      animationFrameRef.current = requestAnimationFrame(animateLerp)
+    }
+    
+    // Start the lerp loop
+    animationFrameRef.current = requestAnimationFrame(animateLerp)
+    
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+    }
+  }, [])
 
   // Track mouse position with progressive reset
   useEffect(() => {
@@ -26,46 +76,14 @@ export function useMousePosition(showControls: boolean) {
     })
     
     const handleMouseMove = (e: MouseEvent) => {
-      // Cancel any ongoing animation
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
-        animationFrameRef.current = null
-      }
-      const newPos = { x: e.clientX, y: e.clientY }
-      currentPosRef.current = newPos
-      setMousePos(newPos)
+      // Update target position, lerp loop will follow
+      targetPosRef.current = { x: e.clientX, y: e.clientY }
     }
     
     const handleMouseLeave = () => {
-      // Animate to center when mouse leaves the page
-      const duration = 800 // milliseconds
-      const startTime = performance.now()
-      const startPos = { ...currentPosRef.current }
+      // Update target to center, lerp loop will smoothly move there
       const centerPos = getCenterPos()
-      
-      const animate = (currentTime: number) => {
-        const elapsed = currentTime - startTime
-        const progress = Math.min(elapsed / duration, 1)
-        
-        // Easing function for smooth animation (ease-out cubic)
-        const easeProgress = 1 - Math.pow(1 - progress, 3)
-        
-        const newPos = {
-          x: startPos.x + (centerPos.x - startPos.x) * easeProgress,
-          y: startPos.y + (centerPos.y - startPos.y) * easeProgress
-        }
-        
-        currentPosRef.current = newPos
-        setMousePos(newPos)
-        
-        if (progress < 1) {
-          animationFrameRef.current = requestAnimationFrame(animate)
-        } else {
-          animationFrameRef.current = null
-        }
-      }
-      
-      animationFrameRef.current = requestAnimationFrame(animate)
+      targetPosRef.current = centerPos
     }
     
     window.addEventListener('mousemove', handleMouseMove)
@@ -84,11 +102,12 @@ export function useMousePosition(showControls: boolean) {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        // Reset mouse position to center when page is hidden
-        setMousePos({
+        // Update target to center, lerp loop will smoothly move there
+        const centerPos = {
           x: window.innerWidth / 2,
           y: window.innerHeight / 2
-        })
+        }
+        targetPosRef.current = centerPos
       }
     }
     
@@ -99,41 +118,12 @@ export function useMousePosition(showControls: boolean) {
   // Reset position when controls panel opens
   useEffect(() => {
     if (showControls) {
-      // Animate to center when controls open
-      const duration = 800
-      const startTime = performance.now()
-      const startPos = { ...currentPosRef.current }
+      // Update target to center, lerp loop will smoothly move there
       const centerPos = {
         x: window.innerWidth / 2,
         y: window.innerHeight / 2
       }
-      
-      const animate = (currentTime: number) => {
-        const elapsed = currentTime - startTime
-        const progress = Math.min(elapsed / duration, 1)
-        
-        // Easing function for smooth animation (ease-out cubic)
-        const easeProgress = 1 - Math.pow(1 - progress, 3)
-        
-        const newPos = {
-          x: startPos.x + (centerPos.x - startPos.x) * easeProgress,
-          y: startPos.y + (centerPos.y - startPos.y) * easeProgress
-        }
-        
-        currentPosRef.current = newPos
-        setMousePos(newPos)
-        
-        if (progress < 1) {
-          animationFrameRef.current = requestAnimationFrame(animate)
-        } else {
-          animationFrameRef.current = null
-        }
-      }
-      
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
-      }
-      animationFrameRef.current = requestAnimationFrame(animate)
+      targetPosRef.current = centerPos
     }
   }, [showControls])
 
