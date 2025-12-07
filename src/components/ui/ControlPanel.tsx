@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react'
 import type React from 'react'
-import type { LightSettings, LogoControls, PointLightSettings } from '../../types'
+import type { LightSettings, LogoControls, PointLightSettings, ScrollAnimationConfig, ScrollAnimationValues } from '../../types'
 import { CollapsibleSection } from './CollapsibleSection'
 import { PointLightControls } from './PointLightControls'
+import { ScrollAnimationControls } from './ScrollAnimationControls'
 
 interface ConfigurationData {
   // Logo settings
@@ -32,6 +33,22 @@ interface ConfigurationData {
   modelPosition: [number, number, number]
   modelRotation: [number, number, number]
   modelScale: number
+  
+  // 3D Model animation
+  modelLerpFactor?: number
+  activeRotation?: [number, number, number]
+  activeTranslation?: [number, number, number]
+  activeScale?: number
+  
+  // Scroll Animation
+  scrollAnimationConfig?: ScrollAnimationConfig
+  
+  // Vector text rotation
+  enableVectorRotation?: boolean
+  vectorPerspective?: number
+  vectorRotateY?: number
+  vectorTranslateZ?: number
+  vectorRotateX?: number
 }
 
 interface ControlPanelProps {
@@ -66,6 +83,33 @@ interface ControlPanelProps {
   setModelRotation: (value: [number, number, number]) => void
   modelScale: number
   setModelScale: (value: number) => void
+  
+  // Scroll Animation controls
+  scrollConfig: ScrollAnimationConfig
+  setScrollConfig: (config: ScrollAnimationConfig) => void
+  scrollValues: ScrollAnimationValues
+  
+  // Vector text rotation controls
+  enableVectorRotation: boolean
+  setEnableVectorRotation: (value: boolean) => void
+  vectorPerspective: number
+  setVectorPerspective: (value: number) => void
+  vectorRotateY: number
+  setVectorRotateY: (value: number) => void
+  vectorTranslateZ: number
+  setVectorTranslateZ: (value: number) => void
+  vectorRotateX: number
+  setVectorRotateX: (value: number) => void
+  
+  // 3D Logo animation parameters
+  modelLerpFactor: number
+  setModelLerpFactor: (value: number) => void
+  activeRotation: [number, number, number]
+  setActiveRotation: (value: [number, number, number]) => void
+  activeTranslation: [number, number, number]
+  setActiveTranslation: (value: [number, number, number]) => void
+  activeScale: number
+  setActiveScale: (value: number) => void
 }
 
 /**
@@ -96,18 +140,45 @@ export function ControlPanel({
   modelRotation,
   setModelRotation,
   modelScale,
-  setModelScale
+  setModelScale,
+  scrollConfig,
+  setScrollConfig,
+  scrollValues,
+  enableVectorRotation,
+  setEnableVectorRotation,
+  vectorPerspective,
+  setVectorPerspective,
+  vectorRotateY,
+  setVectorRotateY,
+  vectorTranslateZ,
+  setVectorTranslateZ,
+  vectorRotateX,
+  setVectorRotateX,
+  modelLerpFactor,
+  setModelLerpFactor,
+  activeRotation,
+  setActiveRotation,
+  activeTranslation,
+  setActiveTranslation,
+  activeScale,
+  setActiveScale
 }: ControlPanelProps) {
-  const [copySuccess, setCopySuccess] = useState(false)
   const [exportSuccess, setExportSuccess] = useState(false)
   const [importSuccess, setImportSuccess] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // Collapsible section states
   const [openSections, setOpenSections] = useState({
+    scrollAnimation: false,
+    vectorRotation: false,
     interactive: false,
     logo: false,
     model: false,
+    lighting: false
+  })
+  
+  // Sub-sections for lighting
+  const [openLightSections, setOpenLightSections] = useState({
     directional: false,
     point1: false,
     point2: false,
@@ -117,6 +188,10 @@ export function ControlPanel({
   
   const toggleSection = (section: keyof typeof openSections) => {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }))
+  }
+  
+  const toggleLightSection = (section: keyof typeof openLightSections) => {
+    setOpenLightSections(prev => ({ ...prev, [section]: !prev[section] }))
   }
 
   // Export configuration to JSON
@@ -148,7 +223,20 @@ export function ControlPanel({
       modelColor,
       modelPosition,
       modelRotation,
-      modelScale
+      modelScale,
+      
+      // 3D Model animation
+      modelLerpFactor,
+      activeRotation,
+      activeTranslation,
+      activeScale,
+      
+      // Vector text rotation
+      enableVectorRotation,
+      vectorPerspective,
+      vectorRotateY,
+      vectorTranslateZ,
+      vectorRotateX
     }
 
     const jsonString = JSON.stringify(config, null, 2)
@@ -203,6 +291,19 @@ export function ControlPanel({
         if (config.modelPosition !== undefined) setModelPosition(config.modelPosition)
         if (config.modelRotation !== undefined) setModelRotation(config.modelRotation)
         if (config.modelScale !== undefined) setModelScale(config.modelScale)
+        
+        // Apply 3D model animation settings
+        if (config.modelLerpFactor !== undefined) setModelLerpFactor(config.modelLerpFactor)
+        if (config.activeRotation !== undefined) setActiveRotation(config.activeRotation)
+        if (config.activeTranslation !== undefined) setActiveTranslation(config.activeTranslation)
+        if (config.activeScale !== undefined) setActiveScale(config.activeScale)
+
+        // Apply vector text rotation settings
+        if (config.enableVectorRotation !== undefined) setEnableVectorRotation(config.enableVectorRotation)
+        if (config.vectorPerspective !== undefined) setVectorPerspective(config.vectorPerspective)
+        if (config.vectorRotateY !== undefined) setVectorRotateY(config.vectorRotateY)
+        if (config.vectorTranslateZ !== undefined) setVectorTranslateZ(config.vectorTranslateZ)
+        if (config.vectorRotateX !== undefined) setVectorRotateX(config.vectorRotateX)
 
         setImportSuccess(true)
         setTimeout(() => setImportSuccess(false), 2000)
@@ -244,20 +345,6 @@ export function ControlPanel({
     }))
   }
 
-  const copyToClipboard = () => {
-    const lightConfig = `<directionalLight position={[${lightSettings.directional.position.join(', ')}]} intensity={${lightSettings.directional.intensity}} color={'${lightSettings.directional.color}'} />
-<pointLight position={[${lightSettings.point1.position.join(', ')}]} intensity={${lightSettings.point1.intensity}} color={'${lightSettings.point1.color}'} />
-<pointLight position={[${lightSettings.point2.position.join(', ')}]} intensity={${lightSettings.point2.intensity}} color={'${lightSettings.point2.color}'} />
-<pointLight position={[${lightSettings.point3.position.join(', ')}]} intensity={${lightSettings.point3.intensity}} color={'${lightSettings.point3.color}'} />
-<pointLight position={[${lightSettings.point4.position.join(', ')}]} intensity={${lightSettings.point4.intensity}} color={'${lightSettings.point4.color}'} />
-<PenroseObj color={'${modelColor}'} position={[${modelPosition.join(', ')}]} rotation={[${modelRotation.join(', ')}]} scale={${modelScale}} />`
-    
-    navigator.clipboard.writeText(lightConfig).then(() => {
-      setCopySuccess(true)
-      setTimeout(() => setCopySuccess(false), 2000)
-    })
-  }
-
   return (
     <div style={{
       position: 'absolute',
@@ -275,6 +362,150 @@ export function ControlPanel({
       fontFamily: 'Arial, sans-serif',
       fontSize: '10px'
     }}>
+      {/* Scroll Animation Section - Top priority for testing */}
+      <ScrollAnimationControls
+        config={scrollConfig}
+        setConfig={setScrollConfig}
+        values={scrollValues}
+        isOpen={openSections.scrollAnimation}
+        onToggle={() => toggleSection('scrollAnimation')}
+      />
+
+      {/* Vector Text Rotation Section */}
+      <CollapsibleSection
+        title="Rotation Logotype"
+        isOpen={openSections.vectorRotation}
+        onToggle={() => toggleSection('vectorRotation')}
+      >
+        <div style={{ marginBottom: '10px' }}>
+          {/* Enable/Disable Rotation */}
+          <label style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '12px', fontSize: '9px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={enableVectorRotation}
+              onChange={(e) => setEnableVectorRotation(e.target.checked)}
+              style={{ cursor: 'pointer' }}
+            />
+            <span>Activer la rotation miroir</span>
+          </label>
+
+          {/* Perspective */}
+          <div style={{ marginBottom: '10px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
+              <span>Perspective</span>
+              <input
+                type="number"
+                step="10"
+                value={vectorPerspective}
+                onChange={(e) => setVectorPerspective(Number(e.target.value))}
+                style={{ width: '60px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+              />
+            </label>
+            <input
+              type="range"
+              min="100"
+              max="3000"
+              step="10"
+              value={vectorPerspective}
+              onChange={(e) => setVectorPerspective(Number(e.target.value))}
+              style={{ width: '100%', cursor: 'pointer' }}
+            />
+          </div>
+
+          {/* Rotate Y (main rotation) */}
+          <div style={{ marginBottom: '10px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
+              <span>Rotation Y (deg)</span>
+              <input
+                type="number"
+                step="1"
+                value={vectorRotateY}
+                onChange={(e) => setVectorRotateY(Number(e.target.value))}
+                style={{ width: '60px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+              />
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="360"
+              step="1"
+              value={vectorRotateY}
+              onChange={(e) => setVectorRotateY(Number(e.target.value))}
+              style={{ width: '100%', cursor: 'pointer' }}
+            />
+          </div>
+
+          {/* Translate Z (depth) */}
+          <div style={{ marginBottom: '10px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
+              <span>Profondeur Z (px)</span>
+              <input
+                type="number"
+                step="10"
+                value={vectorTranslateZ}
+                onChange={(e) => setVectorTranslateZ(Number(e.target.value))}
+                style={{ width: '60px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+              />
+            </label>
+            <input
+              type="range"
+              min="-1000"
+              max="1000"
+              step="10"
+              value={vectorTranslateZ}
+              onChange={(e) => setVectorTranslateZ(Number(e.target.value))}
+              style={{ width: '100%', cursor: 'pointer' }}
+            />
+          </div>
+
+          {/* Rotate X (tilt) */}
+          <div style={{ marginBottom: '10px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
+              <span>Inclinaison X (deg)</span>
+              <input
+                type="number"
+                step="1"
+                value={vectorRotateX}
+                onChange={(e) => setVectorRotateX(Number(e.target.value))}
+                style={{ width: '60px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+              />
+            </label>
+            <input
+              type="range"
+              min="-90"
+              max="90"
+              step="1"
+              value={vectorRotateX}
+              onChange={(e) => setVectorRotateX(Number(e.target.value))}
+              style={{ width: '100%', cursor: 'pointer' }}
+            />
+          </div>
+
+          {/* Reset Button */}
+          <button
+            onClick={() => {
+              setVectorPerspective(1000)
+              setVectorRotateY(180)
+              setVectorTranslateZ(-400)
+              setVectorRotateX(5)
+            }}
+            style={{
+              width: '100%',
+              padding: '6px',
+              background: '#444',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '9px',
+              fontWeight: 'bold'
+            }}
+          >
+            Reset Rotation
+          </button>
+        </div>
+      </CollapsibleSection>
+
       {/* Interactive Effects Section */}
       <CollapsibleSection
         title="Effets Interactifs"
@@ -368,7 +599,7 @@ export function ControlPanel({
 
       {/* Logo Controls Section */}
       <CollapsibleSection
-        title="Logo Controls"
+        title='Logotype Vectoriel'
         isOpen={openSections.logo}
         onToggle={() => toggleSection('logo')}
       >
@@ -561,7 +792,7 @@ export function ControlPanel({
 
       {/* Model 3D Section */}
       <CollapsibleSection
-        title="Modèle 3D"
+        title="Logomark 3D"
         isOpen={openSections.model}
         onToggle={() => toggleSection('model')}
       >
@@ -736,181 +967,497 @@ export function ControlPanel({
             style={{ width: '100%', height: '30px', backgroundColor: '#222', border: '1px solid #555', borderRadius: '4px', cursor: 'pointer' }}
           />
         </div>
-      </CollapsibleSection>
-
-      {/* Directional Light Section */}
-      <CollapsibleSection
-        title="Directional Light"
-        isOpen={openSections.directional}
-        onToggle={() => toggleSection('directional')}
-      >
-        {/* Dir Position X */}
-        <div style={{ marginBottom: '8px' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
-            <span>Position X</span>
-            <input
-              type="number"
-              step="0.01"
-              value={lightSettings.directional.position[0]}
-              onChange={(e) => updateDirectionalLight('position', [Number(e.target.value), lightSettings.directional.position[1], lightSettings.directional.position[2]])}
-              style={{ width: '50px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
-            />
-          </label>
-          <input
-            type="range"
-            min="-50"
-            max="50"
-            step="0.01"
-            value={lightSettings.directional.position[0]}
-            onChange={(e) => updateDirectionalLight('position', [Number(e.target.value), lightSettings.directional.position[1], lightSettings.directional.position[2]])}
-            style={{ width: '100%', cursor: 'pointer' }}
-          />
-        </div>
         
-        {/* Dir Position Y */}
-        <div style={{ marginBottom: '8px' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
-            <span>Position Y</span>
+        {/* Animation Parameters Section */}
+        <div style={{ marginTop: '15px', paddingTop: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.2)' }}>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', marginBottom: '10px', color: 'rgba(255, 165, 0, 0.9)' }}>
+            Paramètres d'Animation
+          </div>
+          
+          {/* Lerp Factor (Smoothness) */}
+          <div style={{ marginBottom: '10px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
+              <span>Fluidité Rotation</span>
+              <input
+                type="number"
+                step="0.01"
+                value={modelLerpFactor}
+                onChange={(e) => setModelLerpFactor(Number(e.target.value))}
+                style={{ width: '50px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+              />
+            </label>
             <input
-              type="number"
+              type="range"
+              min="0.01"
+              max="1"
               step="0.01"
-              value={lightSettings.directional.position[1]}
-              onChange={(e) => updateDirectionalLight('position', [lightSettings.directional.position[0], Number(e.target.value), lightSettings.directional.position[2]])}
-              style={{ width: '50px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+              value={modelLerpFactor}
+              onChange={(e) => setModelLerpFactor(Number(e.target.value))}
+              style={{ width: '100%', cursor: 'pointer' }}
             />
-          </label>
-          <input
-            type="range"
-            min="-50"
-            max="50"
-            step="0.01"
-            value={lightSettings.directional.position[1]}
-            onChange={(e) => updateDirectionalLight('position', [lightSettings.directional.position[0], Number(e.target.value), lightSettings.directional.position[2]])}
-            style={{ width: '100%', cursor: 'pointer' }}
-          />
-        </div>
-        
-        {/* Dir Position Z */}
-        <div style={{ marginBottom: '8px' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
-            <span>Position Z</span>
+            <div style={{ fontSize: '8px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '2px' }}>
+              Plus bas = plus fluide (0.01-1)
+            </div>
+          </div>
+          
+          {/* Active Rotation X */}
+          <div style={{ marginBottom: '8px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
+              <span>Rotation Active X (rad)</span>
+              <input
+                type="number"
+                step="0.1"
+                value={activeRotation[0].toFixed(2)}
+                onChange={(e) => setActiveRotation([Number(e.target.value), activeRotation[1], activeRotation[2]])}
+                style={{ width: '50px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+              />
+            </label>
             <input
-              type="number"
-              step="0.01"
-              value={lightSettings.directional.position[2]}
-              onChange={(e) => updateDirectionalLight('position', [lightSettings.directional.position[0], lightSettings.directional.position[1], Number(e.target.value)])}
-              style={{ width: '50px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+              type="range"
+              min={-Math.PI * 2}
+              max={Math.PI * 2}
+              step="0.1"
+              value={activeRotation[0]}
+              onChange={(e) => setActiveRotation([Number(e.target.value), activeRotation[1], activeRotation[2]])}
+              style={{ width: '100%', cursor: 'pointer' }}
             />
-          </label>
-          <input
-            type="range"
-            min="-50"
-            max="50"
-            step="0.01"
-            value={lightSettings.directional.position[2]}
-            onChange={(e) => updateDirectionalLight('position', [lightSettings.directional.position[0], lightSettings.directional.position[1], Number(e.target.value)])}
-            style={{ width: '100%', cursor: 'pointer' }}
-          />
-        </div>
-        
-        {/* Dir Intensity */}
-        <div style={{ marginBottom: '8px' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
-            <span>Intensity</span>
+          </div>
+          
+          {/* Active Rotation Y */}
+          <div style={{ marginBottom: '8px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
+              <span>Rotation Active Y (rad)</span>
+              <input
+                type="number"
+                step="0.1"
+                value={activeRotation[1].toFixed(2)}
+                onChange={(e) => setActiveRotation([activeRotation[0], Number(e.target.value), activeRotation[2]])}
+                style={{ width: '50px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+              />
+            </label>
             <input
-              type="number"
-              step="0.01"
-              value={lightSettings.directional.intensity}
-              onChange={(e) => updateDirectionalLight('intensity', Number(e.target.value))}
-              style={{ width: '50px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+              type="range"
+              min={-Math.PI * 2}
+              max={Math.PI * 2}
+              step="0.1"
+              value={activeRotation[1]}
+              onChange={(e) => setActiveRotation([activeRotation[0], Number(e.target.value), activeRotation[2]])}
+              style={{ width: '100%', cursor: 'pointer' }}
             />
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="10"
-            step="0.01"
-            value={lightSettings.directional.intensity}
-            onChange={(e) => updateDirectionalLight('intensity', Number(e.target.value))}
-            style={{ width: '100%', cursor: 'pointer' }}
-          />
+          </div>
+          
+          {/* Active Rotation Z */}
+          <div style={{ marginBottom: '10px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
+              <span>Rotation Active Z (rad)</span>
+              <input
+                type="number"
+                step="0.1"
+                value={activeRotation[2].toFixed(2)}
+                onChange={(e) => setActiveRotation([activeRotation[0], activeRotation[1], Number(e.target.value)])}
+                style={{ width: '50px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+              />
+            </label>
+            <input
+              type="range"
+              min={-Math.PI * 2}
+              max={Math.PI * 2}
+              step="0.1"
+              value={activeRotation[2]}
+              onChange={(e) => setActiveRotation([activeRotation[0], activeRotation[1], Number(e.target.value)])}
+              style={{ width: '100%', cursor: 'pointer' }}
+            />
+          </div>
+          
+          {/* Active Translation X */}
+          <div style={{ marginBottom: '8px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
+              <span>Translation Active X</span>
+              <input
+                type="number"
+                step="0.1"
+                value={activeTranslation[0].toFixed(2)}
+                onChange={(e) => setActiveTranslation([Number(e.target.value), activeTranslation[1], activeTranslation[2]])}
+                style={{ width: '50px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+              />
+            </label>
+            <input
+              type="range"
+              min="-10"
+              max="10"
+              step="0.1"
+              value={activeTranslation[0]}
+              onChange={(e) => setActiveTranslation([Number(e.target.value), activeTranslation[1], activeTranslation[2]])}
+              style={{ width: '100%', cursor: 'pointer' }}
+            />
+          </div>
+          
+          {/* Active Translation Y */}
+          <div style={{ marginBottom: '8px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
+              <span>Translation Active Y</span>
+              <input
+                type="number"
+                step="0.1"
+                value={activeTranslation[1].toFixed(2)}
+                onChange={(e) => setActiveTranslation([activeTranslation[0], Number(e.target.value), activeTranslation[2]])}
+                style={{ width: '50px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+              />
+            </label>
+            <input
+              type="range"
+              min="-10"
+              max="10"
+              step="0.1"
+              value={activeTranslation[1]}
+              onChange={(e) => setActiveTranslation([activeTranslation[0], Number(e.target.value), activeTranslation[2]])}
+              style={{ width: '100%', cursor: 'pointer' }}
+            />
+          </div>
+          
+          {/* Active Translation Z */}
+          <div style={{ marginBottom: '10px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
+              <span>Translation Active Z</span>
+              <input
+                type="number"
+                step="0.1"
+                value={activeTranslation[2].toFixed(2)}
+                onChange={(e) => setActiveTranslation([activeTranslation[0], activeTranslation[1], Number(e.target.value)])}
+                style={{ width: '50px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+              />
+            </label>
+            <input
+              type="range"
+              min="-10"
+              max="10"
+              step="0.1"
+              value={activeTranslation[2]}
+              onChange={(e) => setActiveTranslation([activeTranslation[0], activeTranslation[1], Number(e.target.value)])}
+              style={{ width: '100%', cursor: 'pointer' }}
+            />
+          </div>
+          
+          {/* Active Scale */}
+          <div style={{ marginBottom: '10px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
+              <span>Scale Active (multiplicateur)</span>
+              <input
+                type="number"
+                step="0.1"
+                value={activeScale.toFixed(2)}
+                onChange={(e) => setActiveScale(Number(e.target.value))}
+                style={{ width: '50px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+              />
+            </label>
+            <input
+              type="range"
+              min="0.1"
+              max="3"
+              step="0.1"
+              value={activeScale}
+              onChange={(e) => setActiveScale(Number(e.target.value))}
+              style={{ width: '100%', cursor: 'pointer' }}
+            />
+            <div style={{ fontSize: '8px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '2px' }}>
+              1 = taille normale, &lt;1 = plus petit, &gt;1 = plus grand
+            </div>
+          </div>
+          
+          {/* Reset Button for Animation Params */}
+          <button
+            onClick={() => {
+              setModelLerpFactor(0.1)
+              setActiveRotation([0, Math.PI, 0])
+              setActiveTranslation([0, 0, 0])
+              setActiveScale(1)
+            }}
+            style={{
+              width: '100%',
+              padding: '6px',
+              background: '#444',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '9px',
+              fontWeight: 'bold'
+            }}
+          >
+            Reset Animation
+          </button>
         </div>
-        
-        {/* Dir Color */}
-        <div style={{ marginBottom: '10px' }}>
-          <label style={{ display: 'block', marginBottom: '3px', fontSize: '9px' }}>Color</label>
-          <input
-            type="color"
-            value={lightSettings.directional.color}
-            onChange={(e) => updateDirectionalLight('color', e.target.value)}
-            style={{ width: '100%', height: '30px', backgroundColor: '#222', border: '1px solid #555', borderRadius: '4px', cursor: 'pointer' }}
-          />
+      </CollapsibleSection>
+
+      {/* Lighting Section - All lights in one dropdown */}
+      <CollapsibleSection
+        title="Éclairage"
+        isOpen={openSections.lighting}
+        onToggle={() => toggleSection('lighting')}
+      >
+        {/* Directional Light Sub-section */}
+        <div style={{ marginBottom: '8px' }}>
+          <button
+            onClick={() => toggleLightSection('directional')}
+            style={{
+              width: '100%',
+              padding: '6px 8px',
+              backgroundColor: openLightSections.directional ? 'rgba(255, 200, 50, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+              color: 'white',
+              border: '1px solid rgba(255, 200, 50, 0.3)',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '9px',
+              fontWeight: 'bold',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}
+          >
+            <span>Directional Light</span>
+            <span>{openLightSections.directional ? '▼' : '▶'}</span>
+          </button>
+          
+          {openLightSections.directional && (
+            <div style={{ padding: '8px', backgroundColor: 'rgba(255, 200, 50, 0.05)', borderRadius: '0 0 4px 4px', marginTop: '-1px' }}>
+              {/* Dir Position X */}
+              <div style={{ marginBottom: '8px' }}>
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
+                  <span>Position X</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={lightSettings.directional.position[0]}
+                    onChange={(e) => updateDirectionalLight('position', [Number(e.target.value), lightSettings.directional.position[1], lightSettings.directional.position[2]])}
+                    style={{ width: '50px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+                  />
+                </label>
+                <input
+                  type="range"
+                  min="-50"
+                  max="50"
+                  step="0.01"
+                  value={lightSettings.directional.position[0]}
+                  onChange={(e) => updateDirectionalLight('position', [Number(e.target.value), lightSettings.directional.position[1], lightSettings.directional.position[2]])}
+                  style={{ width: '100%', cursor: 'pointer' }}
+                />
+              </div>
+              
+              {/* Dir Position Y */}
+              <div style={{ marginBottom: '8px' }}>
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
+                  <span>Position Y</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={lightSettings.directional.position[1]}
+                    onChange={(e) => updateDirectionalLight('position', [lightSettings.directional.position[0], Number(e.target.value), lightSettings.directional.position[2]])}
+                    style={{ width: '50px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+                  />
+                </label>
+                <input
+                  type="range"
+                  min="-50"
+                  max="50"
+                  step="0.01"
+                  value={lightSettings.directional.position[1]}
+                  onChange={(e) => updateDirectionalLight('position', [lightSettings.directional.position[0], Number(e.target.value), lightSettings.directional.position[2]])}
+                  style={{ width: '100%', cursor: 'pointer' }}
+                />
+              </div>
+              
+              {/* Dir Position Z */}
+              <div style={{ marginBottom: '8px' }}>
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
+                  <span>Position Z</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={lightSettings.directional.position[2]}
+                    onChange={(e) => updateDirectionalLight('position', [lightSettings.directional.position[0], lightSettings.directional.position[1], Number(e.target.value)])}
+                    style={{ width: '50px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+                  />
+                </label>
+                <input
+                  type="range"
+                  min="-50"
+                  max="50"
+                  step="0.01"
+                  value={lightSettings.directional.position[2]}
+                  onChange={(e) => updateDirectionalLight('position', [lightSettings.directional.position[0], lightSettings.directional.position[1], Number(e.target.value)])}
+                  style={{ width: '100%', cursor: 'pointer' }}
+                />
+              </div>
+              
+              {/* Dir Intensity */}
+              <div style={{ marginBottom: '8px' }}>
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
+                  <span>Intensity</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={lightSettings.directional.intensity}
+                    onChange={(e) => updateDirectionalLight('intensity', Number(e.target.value))}
+                    style={{ width: '50px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+                  />
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="10"
+                  step="0.01"
+                  value={lightSettings.directional.intensity}
+                  onChange={(e) => updateDirectionalLight('intensity', Number(e.target.value))}
+                  style={{ width: '100%', cursor: 'pointer' }}
+                />
+              </div>
+              
+              {/* Dir Color */}
+              <div>
+                <label style={{ display: 'block', marginBottom: '3px', fontSize: '9px' }}>Color</label>
+                <input
+                  type="color"
+                  value={lightSettings.directional.color}
+                  onChange={(e) => updateDirectionalLight('color', e.target.value)}
+                  style={{ width: '100%', height: '25px', backgroundColor: '#222', border: '1px solid #555', borderRadius: '4px', cursor: 'pointer' }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Point Light 1 Sub-section */}
+        <div style={{ marginBottom: '8px' }}>
+          <button
+            onClick={() => toggleLightSection('point1')}
+            style={{
+              width: '100%',
+              padding: '6px 8px',
+              backgroundColor: openLightSections.point1 ? 'rgba(100, 149, 237, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+              color: 'white',
+              border: '1px solid rgba(100, 149, 237, 0.3)',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '9px',
+              fontWeight: 'bold',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}
+          >
+            <span>Point Light 1</span>
+            <span>{openLightSections.point1 ? '▼' : '▶'}</span>
+          </button>
+          
+          {openLightSections.point1 && (
+            <div style={{ padding: '8px', backgroundColor: 'rgba(100, 149, 237, 0.05)', borderRadius: '0 0 4px 4px', marginTop: '-1px' }}>
+              <PointLightControls
+                light={lightSettings.point1}
+                onUpdate={(key, value) => updatePointLight('point1', key, value)}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Point Light 2 Sub-section */}
+        <div style={{ marginBottom: '8px' }}>
+          <button
+            onClick={() => toggleLightSection('point2')}
+            style={{
+              width: '100%',
+              padding: '6px 8px',
+              backgroundColor: openLightSections.point2 ? 'rgba(50, 205, 50, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+              color: 'white',
+              border: '1px solid rgba(50, 205, 50, 0.3)',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '9px',
+              fontWeight: 'bold',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}
+          >
+            <span>Point Light 2</span>
+            <span>{openLightSections.point2 ? '▼' : '▶'}</span>
+          </button>
+          
+          {openLightSections.point2 && (
+            <div style={{ padding: '8px', backgroundColor: 'rgba(50, 205, 50, 0.05)', borderRadius: '0 0 4px 4px', marginTop: '-1px' }}>
+              <PointLightControls
+                light={lightSettings.point2}
+                onUpdate={(key, value) => updatePointLight('point2', key, value)}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Point Light 3 Sub-section */}
+        <div style={{ marginBottom: '8px' }}>
+          <button
+            onClick={() => toggleLightSection('point3')}
+            style={{
+              width: '100%',
+              padding: '6px 8px',
+              backgroundColor: openLightSections.point3 ? 'rgba(255, 99, 71, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+              color: 'white',
+              border: '1px solid rgba(255, 99, 71, 0.3)',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '9px',
+              fontWeight: 'bold',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}
+          >
+            <span>Point Light 3</span>
+            <span>{openLightSections.point3 ? '▼' : '▶'}</span>
+          </button>
+          
+          {openLightSections.point3 && (
+            <div style={{ padding: '8px', backgroundColor: 'rgba(255, 99, 71, 0.05)', borderRadius: '0 0 4px 4px', marginTop: '-1px' }}>
+              <PointLightControls
+                light={lightSettings.point3}
+                onUpdate={(key, value) => updatePointLight('point3', key, value)}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Point Light 4 Sub-section */}
+        <div style={{ marginBottom: '8px' }}>
+          <button
+            onClick={() => toggleLightSection('point4')}
+            style={{
+              width: '100%',
+              padding: '6px 8px',
+              backgroundColor: openLightSections.point4 ? 'rgba(148, 0, 211, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+              color: 'white',
+              border: '1px solid rgba(148, 0, 211, 0.3)',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '9px',
+              fontWeight: 'bold',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}
+          >
+            <span>Point Light 4</span>
+            <span>{openLightSections.point4 ? '▼' : '▶'}</span>
+          </button>
+          
+          {openLightSections.point4 && (
+            <div style={{ padding: '8px', backgroundColor: 'rgba(148, 0, 211, 0.05)', borderRadius: '0 0 4px 4px', marginTop: '-1px' }}>
+              <PointLightControls
+                light={lightSettings.point4}
+                onUpdate={(key, value) => updatePointLight('point4', key, value)}
+              />
+            </div>
+          )}
         </div>
       </CollapsibleSection>
-
-      {/* Point Lights wrapped in CollapsibleSections */}
-      <CollapsibleSection
-        title="Point Light 1"
-        isOpen={openSections.point1}
-        onToggle={() => toggleSection('point1')}
-      >
-        <PointLightControls
-          light={lightSettings.point1}
-          onUpdate={(key, value) => updatePointLight('point1', key, value)}
-        />
-      </CollapsibleSection>
-
-      <CollapsibleSection
-        title="Point Light 2"
-        isOpen={openSections.point2}
-        onToggle={() => toggleSection('point2')}
-      >
-        <PointLightControls
-          light={lightSettings.point2}
-          onUpdate={(key, value) => updatePointLight('point2', key, value)}
-        />
-      </CollapsibleSection>
-
-      <CollapsibleSection
-        title="Point Light 3"
-        isOpen={openSections.point3}
-        onToggle={() => toggleSection('point3')}
-      >
-        <PointLightControls
-          light={lightSettings.point3}
-          onUpdate={(key, value) => updatePointLight('point3', key, value)}
-        />
-      </CollapsibleSection>
-
-      <CollapsibleSection
-        title="Point Light 4"
-        isOpen={openSections.point4}
-        onToggle={() => toggleSection('point4')}
-      >
-        <PointLightControls
-          light={lightSettings.point4}
-          onUpdate={(key, value) => updatePointLight('point4', key, value)}
-        />
-      </CollapsibleSection>
-
-      <button
-        onClick={copyToClipboard}
-        style={{
-          width: '100%',
-          padding: '8px',
-          backgroundColor: copySuccess ? '#28a745' : '#007bff',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          fontSize: '9px',
-          fontWeight: 'bold',
-          transition: 'background-color 0.3s',
-          marginTop: '10px'
-        }}
-      >
-        {copySuccess ? '✓ Copié!' : 'Copier les valeurs'}
-      </button>
 
       {/* Import/Export Configuration Section */}
       <div style={{

@@ -1,4 +1,8 @@
 import type React from 'react'
+import type { ScrollAnimationConfig, ScrollAnimationValues } from '../hooks/useScrollAnimation'
+
+// Re-export scroll animation types for convenience
+export type { ScrollAnimationConfig, ScrollAnimationValues }
 
 /**
  * Point light configuration settings
@@ -52,23 +56,23 @@ export interface LogoControls {
  * Scene component props
  */
 export interface SceneProps {
-  logoControls: LogoControls
   mouseRotationX?: number
   mouseRotationY?: number
   enableRotation?: boolean
-  // Interactive effects controls
-  enableDynamicGlow: boolean
-  setEnableDynamicGlow: (value: boolean) => void
-  invertGlow: boolean
-  setInvertGlow: (value: boolean) => void
-  setEnableRotation: (value: boolean) => void
-  enablePositioning: boolean
-  setEnablePositioning: (value: boolean) => void
-  displacementCoeff: number
-  setDisplacementCoeff: (value: number) => void
-  rotationCoeff: number
-  setRotationCoeff: (value: number) => void
-  mousePos: { x: number; y: number }
-  showControls: boolean
-  setShowControls: (value: boolean) => void
+  // Scroll animation props
+  scrollConfig: ScrollAnimationConfig
+  scrollValues: ScrollAnimationValues
+  // Rotation toggle
+  isRotated: boolean
+  // Light and model settings
+  lights: LightSettings
+  modelColor: string
+  modelPosition: [number, number, number]
+  modelRotation: [number, number, number]
+  modelScale: number
+  // Animation parameters
+  modelLerpFactor: number
+  activeRotation: [number, number, number]
+  activeTranslation: [number, number, number]
+  activeScale: number
 }

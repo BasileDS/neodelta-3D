@@ -4,7 +4,12 @@ import './App.css'
 import Scene from './Scene'
 import VectorLogotype from './components/vector/VectorLogotype'
 import CursorGlow from './components/ui/CursorGlow'
+import ScrollBackground from './components/ui/ScrollBackground'
+import AgencySections from './components/ui/AgencySections'
+import { ControlPanel } from './components/ui/ControlPanel'
 import { useMousePosition } from './hooks/useMousePosition'
+import { useScrollAnimation, defaultScrollConfig } from './hooks/useScrollAnimation'
+import type { ScrollAnimationConfig, LightSettings } from './types'
 
 const title = {
   fontSize: '1.4rem',
@@ -34,6 +39,20 @@ function App() {
   const [displacementCoeff, setDisplacementCoeff] = useState(0.03)
   const [rotationCoeff, setRotationCoeff] = useState(0.3)
   const [showControls, setShowControls] = useState(false)
+  
+  // Rotation toggle state
+  const [isRotated, setIsRotated] = useState(false)
+  
+  // Vector text rotation parameters
+  const [enableVectorRotation, setEnableVectorRotation] = useState(true)
+  const [vectorPerspective, setVectorPerspective] = useState(950)
+  const [vectorRotateY, setVectorRotateY] = useState(50)
+  const [vectorTranslateZ, setVectorTranslateZ] = useState(-450)
+  const [vectorRotateX, setVectorRotateX] = useState(3)
+  
+  // Scroll animation state
+  const [scrollConfig, setScrollConfig] = useState<ScrollAnimationConfig>(defaultScrollConfig)
+  const scrollValues = useScrollAnimation(scrollConfig)
   
   // Use custom mouse position hook
   const { mousePos } = useMousePosition(showControls)
@@ -74,8 +93,49 @@ function App() {
   const [enableCursorGlow] = useState(true)
   const [cursorGlowDisplacement] = useState(1) // 1 = follows cursor exactly
 
+  // 3D Scene settings
+  const [lights, setLights] = useState<LightSettings>({
+    directional: {
+      position: [-26.34, 12.33, 14.98],
+      intensity: 4.45,
+      color: '#ffe95c'
+    },
+    point1: {
+      position: [-0.22, 1.46, 1.12],
+      intensity: 3.52,
+      color: '#ffd500'
+    },
+    point2: {
+      position: [6, -1.23, 4.46],
+      intensity: 8.6,
+      color: '#ffbb00'
+    },
+    point3: {
+      position: [3.42, 5.82, -15.45],
+      intensity: 0,
+      color: '#ff0000'
+    },
+    point4: {
+      position: [0, -2, -2],
+      intensity: 0,
+      color: '#ff0000'
+    }
+  })
+
+  const [modelColor, setModelColor] = useState('#ffae00')
+  const [modelPosition, setModelPosition] = useState<[number, number, number]>([0, -1.5, 0.51])
+  const [modelRotation, setModelRotation] = useState<[number, number, number]>([-0.972, -2.962, -0.72])
+  const [modelScale, setModelScale] = useState(76.1)
+  
+  // Animation parameters for 3D logo
+  const [modelLerpFactor, setModelLerpFactor] = useState(0.1) // Smoothness of rotation (0.01-1)
+  const [activeRotation, setActiveRotation] = useState<[number, number, number]>([0, Math.PI, 0]) // Rotation added when active (radians)
+  const [activeTranslation, setActiveTranslation] = useState<[number, number, number]>([0, 0, 0]) // Translation added when active
+  const [activeScale, setActiveScale] = useState(1) // Scale multiplier when active (1 = no change)
+
   return (
     <>
+      <ScrollBackground />
       <CursorGlow
         mousePos={mousePos}
         color={cursorGlowColor}
@@ -86,46 +146,163 @@ function App() {
         displacementCoeff={cursorGlowDisplacement}
       />
       <h1 style={title}>Neodelta <em>Playground</em></h1>
-      <Scene
-        logoControls={{
-          fillColor,
-          setFillColor,
-          strokeWidth,
-          setStrokeWidth,
-          strokeOpacity,
-          setStrokeOpacity,
-          fillOpacity,
-          setFillOpacity,
-          backdropBlur,
-          setBackdropBlur,
-          blendMode,
-          setBlendMode,
-          glowColor,
-          setGlowColor,
-          glowOpacity,
-          setGlowOpacity,
-          glowIntensity,
-          setGlowIntensity
+      
+      {/* View Toggle Button */}
+      <button
+        onClick={() => setIsRotated(!isRotated)}
+        style={{
+          position: 'fixed',
+          top: '1rem',
+          right: '12rem',
+          backgroundColor: isRotated ? 'rgba(255, 165, 0, 0.85)' : 'rgba(0, 0, 0, 0.85)',
+          color: 'white',
+          border: '1px solid #555',
+          borderRadius: '8px',
+          padding: '10px 15px',
+          cursor: 'pointer',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          zIndex: 1001,
+          transition: 'all 0.3s',
+          fontFamily: 'Arial, sans-serif'
         }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = isRotated ? 'rgba(255, 165, 0, 0.95)' : 'rgba(0, 0, 0, 0.95)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = isRotated ? 'rgba(255, 165, 0, 0.85)' : 'rgba(0, 0, 0, 0.85)'
+        }}
+      >
+        {isRotated ? 'Active' : 'Base'}
+      </button>
+      
+      {/* Parameters Toggle Button */}
+      <button
+        onClick={() => setShowControls(!showControls)}
+        style={{
+          position: 'fixed',
+          top: '1rem',
+          right: '2rem',
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          color: 'white',
+          border: '1px solid #555',
+          borderRadius: '8px',
+          padding: '10px 15px',
+          cursor: 'pointer',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          zIndex: 1001,
+          transition: 'all 0.3s',
+          fontFamily: 'Arial, sans-serif'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.95)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.85)'
+        }}
+      >
+        {showControls ? 'Masquer' : 'Paramètres'}
+      </button>
+
+      {/* Control Panel */}
+      {showControls && (
+        <ControlPanel
+          lightSettings={lights}
+          setLightSettings={setLights}
+          logoControls={{
+            fillColor,
+            setFillColor,
+            strokeWidth,
+            setStrokeWidth,
+            strokeOpacity,
+            setStrokeOpacity,
+            fillOpacity,
+            setFillOpacity,
+            backdropBlur,
+            setBackdropBlur,
+            blendMode,
+            setBlendMode,
+            glowColor,
+            setGlowColor,
+            glowOpacity,
+            setGlowOpacity,
+            glowIntensity,
+            setGlowIntensity
+          }}
+          enableDynamicGlow={enableDynamicGlow}
+          setEnableDynamicGlow={setEnableDynamicGlow}
+          invertGlow={invertGlow}
+          setInvertGlow={setInvertGlow}
+          enableRotation={enableRotation}
+          setEnableRotation={setEnableRotation}
+          enablePositioning={enablePositioning}
+          setEnablePositioning={setEnablePositioning}
+          displacementCoeff={displacementCoeff}
+          setDisplacementCoeff={setDisplacementCoeff}
+          rotationCoeff={rotationCoeff}
+          setRotationCoeff={setRotationCoeff}
+          mousePos={mousePos}
+          modelColor={modelColor}
+          setModelColor={setModelColor}
+          modelPosition={modelPosition}
+          setModelPosition={setModelPosition}
+          modelRotation={modelRotation}
+          setModelRotation={setModelRotation}
+          modelScale={modelScale}
+          setModelScale={setModelScale}
+          scrollConfig={scrollConfig}
+          setScrollConfig={setScrollConfig}
+          scrollValues={scrollValues}
+          enableVectorRotation={enableVectorRotation}
+          setEnableVectorRotation={setEnableVectorRotation}
+          vectorPerspective={vectorPerspective}
+          setVectorPerspective={setVectorPerspective}
+          vectorRotateY={vectorRotateY}
+          setVectorRotateY={setVectorRotateY}
+          vectorTranslateZ={vectorTranslateZ}
+          setVectorTranslateZ={setVectorTranslateZ}
+          vectorRotateX={vectorRotateX}
+          setVectorRotateX={setVectorRotateX}
+          modelLerpFactor={modelLerpFactor}
+          setModelLerpFactor={setModelLerpFactor}
+          activeRotation={activeRotation}
+          setActiveRotation={setActiveRotation}
+          activeTranslation={activeTranslation}
+          setActiveTranslation={setActiveTranslation}
+          activeScale={activeScale}
+          setActiveScale={setActiveScale}
+        />
+      )}
+
+      <Scene
         mouseRotationX={rotationX}
         mouseRotationY={rotationY}
         enableRotation={enableRotation}
-        enableDynamicGlow={enableDynamicGlow}
-        setEnableDynamicGlow={setEnableDynamicGlow}
-        invertGlow={invertGlow}
-        setInvertGlow={setInvertGlow}
-        setEnableRotation={setEnableRotation}
-        enablePositioning={enablePositioning}
-        setEnablePositioning={setEnablePositioning}
-        displacementCoeff={displacementCoeff}
-        setDisplacementCoeff={setDisplacementCoeff}
-        rotationCoeff={rotationCoeff}
-        setRotationCoeff={setRotationCoeff}
-        mousePos={mousePos}
-        showControls={showControls}
-        setShowControls={setShowControls}
+        scrollConfig={scrollConfig}
+        scrollValues={scrollValues}
+        isRotated={isRotated}
+        lights={lights}
+        modelColor={modelColor}
+        modelPosition={modelPosition}
+        modelRotation={modelRotation}
+        modelScale={modelScale}
+        modelLerpFactor={modelLerpFactor}
+        activeRotation={activeRotation}
+        activeTranslation={activeTranslation}
+        activeScale={activeScale}
       />
-      <div className='square'>
+      <div
+        className='square'
+        style={{
+          opacity: scrollConfig.enableScrollOpacity ? scrollValues.opacity : 1,
+          transform: (isRotated && enableVectorRotation)
+            ? `perspective(${vectorPerspective}px) rotateY(${vectorRotateY}deg) translateZ(${vectorTranslateZ}px) rotateX(${vectorRotateX}deg)`
+            : 'none',
+          transition: 'transform 0.8s ease-in-out',
+          zIndex: isRotated ? 0 : 1,
+        }}
+      >
         <VectorLogotype
           fillColor={fillColor}
           strokeWidth={strokeWidth}
@@ -142,6 +319,7 @@ function App() {
           translateY={translateY}
         />
       </div>
+      <AgencySections />
     </>
   )
 }

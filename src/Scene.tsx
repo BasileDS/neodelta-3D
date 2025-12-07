@@ -1,65 +1,136 @@
 import { Canvas } from '@react-three/fiber'
-import { useState } from 'react'
 import PenroseObj from './components/3d/PenroseObj'
 import ResettableControls from './components/3d/ResettableControls'
-import { ControlPanel } from './components/ui/ControlPanel'
-import type { SceneProps, LightSettings } from './types'
+import type { SceneProps } from './types'
+
+// Helper function to combine rotations
+function combineRotations(
+  baseRotation: [number, number, number],
+  mouseRotationX: number,
+  mouseRotationY: number,
+  enableMouseRotation: boolean,
+  scrollRotation: [number, number, number],
+  enableScrollRotation: boolean
+): [number, number, number] {
+  let result: [number, number, number] = [...baseRotation]
+  
+  if (enableMouseRotation) {
+    result = [
+      result[0] + (mouseRotationX * Math.PI / 180),
+      result[1] + (mouseRotationY * Math.PI / 180),
+      result[2]
+    ]
+  }
+  
+  if (enableScrollRotation) {
+    result = [
+      result[0] + scrollRotation[0],
+      result[1] + scrollRotation[1],
+      result[2] + scrollRotation[2]
+    ]
+  }
+  
+  return result
+}
+
+// Helper function to combine positions
+function combinePositions(
+  basePosition: [number, number, number],
+  scrollPosition: [number, number, number],
+  enableScrollPosition: boolean
+): [number, number, number] {
+  if (!enableScrollPosition) return basePosition
+  
+  return [
+    basePosition[0] + scrollPosition[0],
+    basePosition[1] + scrollPosition[1],
+    basePosition[2] + scrollPosition[2]
+  ]
+}
+
+// Helper function to combine scales
+function combineScales(
+  baseScale: number,
+  scrollScale: number,
+  enableScrollScale: boolean
+): number {
+  if (!enableScrollScale) return baseScale
+  return baseScale * scrollScale
+}
 
 export default function Scene({
-  logoControls,
   mouseRotationX = 0,
   mouseRotationY = 0,
   enableRotation = false,
-  enableDynamicGlow,
-  setEnableDynamicGlow,
-  invertGlow,
-  setInvertGlow,
-  setEnableRotation,
-  enablePositioning,
-  setEnablePositioning,
-  displacementCoeff,
-  setDisplacementCoeff,
-  rotationCoeff,
-  setRotationCoeff,
-  mousePos,
-  showControls,
-  setShowControls
+  scrollConfig,
+  scrollValues,
+  isRotated,
+  lights,
+  modelColor,
+  modelPosition,
+  modelRotation,
+  modelScale,
+  modelLerpFactor,
+  activeRotation,
+  activeTranslation,
+  activeScale
 }: SceneProps) {
-  const [lights, setLights] = useState<LightSettings>({
-    directional: {
-      position: [-26.34, 12.33, 14.98],
-      intensity: 4.45,
-      color: '#ffe95c'
-    },
-    point1: {
-      position: [-0.22, 1.46, 1.12],
-      intensity: 3.52,
-      color: '#ffd500'
-    },
-    point2: {
-      position: [6, -1.23, 4.46],
-      intensity: 8.6,
-      color: '#ffbb00'
-    },
-    point3: {
-      position: [3.42, 5.82, -15.45],
-      intensity: 0,
-      color: '#ff0000'
-    },
-    point4: {
-      position: [0, -2, -2],
-      intensity: 0,
-      color: '#ff0000'
-    }
-  })
 
-  const [modelColor, setModelColor] = useState('#ffae00')
-  const [modelPosition, setModelPosition] = useState<[number, number, number]>([0, -1.5, 0.51])
-  const [modelRotation, setModelRotation] = useState<[number, number, number]>([-0.972, -2.962, -0.72])
-  const [modelScale, setModelScale] = useState(76.1)
+  // Calculate combined transformations
+  let finalRotation = combineRotations(
+    modelRotation,
+    mouseRotationX,
+    mouseRotationY,
+    enableRotation,
+    scrollValues.rotation,
+    scrollConfig.enableScrollRotation
+  )
+  
+  // Add active rotation when isRotated is true
+  if (isRotated) {
+    finalRotation = [
+      finalRotation[0] + activeRotation[0],
+      finalRotation[1] + activeRotation[1],
+      finalRotation[2] + activeRotation[2]
+    ]
+  }
+  
+  let finalPosition = combinePositions(
+    modelPosition,
+    scrollValues.position,
+    scrollConfig.enableScrollPosition
+  )
+  
+  // Add active translation when isRotated is true
+  if (isRotated) {
+    finalPosition = [
+      finalPosition[0] + activeTranslation[0],
+      finalPosition[1] + activeTranslation[1],
+      finalPosition[2] + activeTranslation[2]
+    ]
+  }
+  
+  let finalScale = combineScales(
+    modelScale,
+    scrollValues.scale,
+    scrollConfig.enableScrollScale
+  )
+  
+  // Apply active scale multiplier when isRotated is true
+  if (isRotated) {
+    finalScale = finalScale * activeScale
+  }
 
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden', touchAction: 'none' }}>
+    <div style={{
+      width: '100vw',
+      height: '100vh',
+      position: 'relative',
+      overflow: 'hidden',
+      touchAction: 'none',
+      zIndex: isRotated ? 10 : 0,
+      transition: 'z-index 0.4s'
+    }}>
       <Canvas
         camera={{ zoom: 50, position: [0, 0, 20], fov: 35 }}
         orthographic
@@ -94,78 +165,13 @@ export default function Scene({
         />
         <PenroseObj
           color={modelColor}
-          position={modelPosition}
-          rotation={enableRotation
-            ? [
-                modelRotation[0] + (mouseRotationX * Math.PI / 180),
-                modelRotation[1] + (mouseRotationY * Math.PI / 180),
-                modelRotation[2]
-              ]
-            : modelRotation
-          }
-          scale={modelScale}
+          position={finalPosition}
+          rotation={finalRotation}
+          scale={finalScale}
+          lerpFactor={modelLerpFactor}
         />
         <ResettableControls />
       </Canvas>
-
-      {/* Toggle Button */}
-      <button
-        onClick={() => setShowControls(!showControls)}
-        style={{
-          position: 'absolute',
-          top: '10px',
-          right: '10px',
-          backgroundColor: 'rgba(0, 0, 0, 0.85)',
-          color: 'white',
-          border: '1px solid #555',
-          borderRadius: '8px',
-          padding: '10px 15px',
-          cursor: 'pointer',
-          fontSize: '14px',
-          fontWeight: 'bold',
-          zIndex: 1001,
-          transition: 'all 0.3s',
-          fontFamily: 'Arial, sans-serif'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.95)'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.85)'
-        }}
-      >
-        {showControls ? 'Masquer' : 'Paramètres'}
-      </button>
-
-      {/* Control Panel */}
-      {showControls && (
-        <ControlPanel
-          lightSettings={lights}
-          setLightSettings={setLights}
-          logoControls={logoControls}
-          enableDynamicGlow={enableDynamicGlow}
-          setEnableDynamicGlow={setEnableDynamicGlow}
-          invertGlow={invertGlow}
-          setInvertGlow={setInvertGlow}
-          enableRotation={enableRotation}
-          setEnableRotation={setEnableRotation}
-          enablePositioning={enablePositioning}
-          setEnablePositioning={setEnablePositioning}
-          displacementCoeff={displacementCoeff}
-          setDisplacementCoeff={setDisplacementCoeff}
-          rotationCoeff={rotationCoeff}
-          setRotationCoeff={setRotationCoeff}
-          mousePos={mousePos}
-          modelColor={modelColor}
-          setModelColor={setModelColor}
-          modelPosition={modelPosition}
-          setModelPosition={setModelPosition}
-          modelRotation={modelRotation}
-          setModelRotation={setModelRotation}
-          modelScale={modelScale}
-          setModelScale={setModelScale}
-        />
-      )}
     </div>
   )
 }
