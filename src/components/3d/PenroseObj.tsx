@@ -14,10 +14,10 @@ interface PenroseObjProps {
 
 export default function PenroseObj({
   color = '#ffbb00',
-  position = [0, 0, 0],
-  rotation = [-0.952, -3.05, -0.72],
-  scale = 50,
-  lerpFactor = 0.1
+  position = [15.9, 1.6, 0],
+  rotation = [0, 3.14, 0],
+  scale = 105,
+  lerpFactor = 1
 }: PenroseObjProps) {
   const ref = useRef<THREE.Mesh>(null)
   const geometry = useLoader(STLLoader, '/models/Penrose_object_rounded_v2.stl')
@@ -27,8 +27,8 @@ export default function PenroseObj({
   // MeshStandardMaterial permet des transitions de lumière progressives et lisses
   const material = useMemo(() => new THREE.MeshStandardMaterial({
     color,
-    roughness: 0.4,
-    metalness: 0.1,
+    roughness: 1,
+    metalness: 0,
   }), [color])
 
   // Centrer la géométrie et initialiser la position/rotation/scale

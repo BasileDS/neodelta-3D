@@ -64,24 +64,24 @@ function App() {
   // Calculate angle from center to mouse (in degrees)
   const deltaX = mousePos.x - centerX
   const deltaY = mousePos.y - centerY
-  const glowAngle = enableDynamicGlow
+  const glowAngle = enableDynamicGlow && !isRotated
     ? Math.atan2(deltaY, deltaX) * (180 / Math.PI)
     : 45
 
   // Calculate rotation based on mouse X and Y position
   // X axis rotation based on mouse Y, Y axis rotation based on mouse X
-  const rotationX = enableRotation
+  const rotationX = enableRotation && !isRotated
     ? ((mousePos.y - centerY) / centerY) * rotationCoeff * 100
     : 0
-  const rotationY = enableRotation
+  const rotationY = enableRotation && !isRotated
     ? ((mousePos.x - centerX) / centerX) * rotationCoeff * 100
     : 0
 
   // Calculate positioning offset based on mouse position
-  const translateX = enablePositioning
+  const translateX = enablePositioning && !isRotated
     ? (mousePos.x - centerX) * displacementCoeff
     : 0
-  const translateY = enablePositioning
+  const translateY = enablePositioning && !isRotated
     ? (mousePos.y - centerY) * displacementCoeff
     : 0
 
@@ -128,10 +128,10 @@ function App() {
   const [modelScale, setModelScale] = useState(76.1)
   
   // Animation parameters for 3D logo
-  const [modelLerpFactor, setModelLerpFactor] = useState(0.1) // Smoothness of rotation (0.01-1)
+  const [modelLerpFactor, setModelLerpFactor] = useState(0.07) // Smoothness of rotation (0.01-1)
   const [activeRotation, setActiveRotation] = useState<[number, number, number]>([0, Math.PI, 0]) // Rotation added when active (radians)
-  const [activeTranslation, setActiveTranslation] = useState<[number, number, number]>([0, 0, 0]) // Translation added when active
-  const [activeScale, setActiveScale] = useState(1) // Scale multiplier when active (1 = no change)
+  const [activeTranslation, setActiveTranslation] = useState<[number, number, number]>([15.9, 1.6, 0]) // Translation added when active
+  const [activeScale, setActiveScale] = useState(2.1) // Scale multiplier when active (1 = no change)
 
   return (
     <>
@@ -299,7 +299,7 @@ function App() {
           transform: (isRotated && enableVectorRotation)
             ? `perspective(${vectorPerspective}px) rotateY(${vectorRotateY}deg) translateZ(${vectorTranslateZ}px) rotateX(${vectorRotateX}deg)`
             : 'none',
-          transition: 'transform 0.8s ease-in-out',
+          transition: 'transform 1.2s cubic-bezier(0.25, 0.1, 0.25, 1)',
           zIndex: isRotated ? 0 : 1,
         }}
       >
