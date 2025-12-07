@@ -18,7 +18,7 @@ export default function PenroseObj({
   scale = 50
 }: PenroseObjProps) {
   const ref = useRef<THREE.Mesh>(null)
-  const geometry = useLoader(STLLoader, '/models/Penrose_object.stl')
+  const geometry = useLoader(STLLoader, '/models/Penrose_object_rounded.stl')
 
   // Créer le matériau avec la couleur passée en prop (mémorisé pour éviter les recréations)
   // MeshStandardMaterial permet des transitions de lumière progressives et lisses

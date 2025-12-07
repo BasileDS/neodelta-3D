@@ -100,6 +100,8 @@ interface SceneProps {
   rotationCoeff: number
   setRotationCoeff: (value: number) => void
   mousePos: { x: number; y: number }
+  showControls: boolean
+  setShowControls: (value: boolean) => void
 }
 
 function ResettableControls() {
@@ -356,7 +358,9 @@ export default function Scene({
   setDisplacementCoeff,
   rotationCoeff,
   setRotationCoeff,
-  mousePos
+  mousePos,
+  showControls,
+  setShowControls
 }: SceneProps) {
   const [lights, setLights] = useState<LightSettings>({
     directional: {
@@ -391,7 +395,6 @@ export default function Scene({
   const [modelRotation, setModelRotation] = useState<[number, number, number]>([-0.951592653589793, -3.05, -0.72])
   const [modelScale, setModelScale] = useState(76.1)
   const [copySuccess, setCopySuccess] = useState(false)
-  const [showControls, setShowControls] = useState(false)
   
   // Collapsible section states
   const [openSections, setOpenSections] = useState({
