@@ -11,6 +11,7 @@ interface VectorLogotypeProps {
   glowColor?: string;
   glowOpacity?: number;
   glowAngle?: number;
+  invertGlow?: boolean;
   translateX?: number;
   translateY?: number;
 }
@@ -149,7 +150,7 @@ const letterConfigs = [
 
 export default function VectorLogotype({
   fillColor = "#ffffff53",
-  strokeWidth = "0.2",
+  strokeWidth = "0.5",
   strokeOpacity = 1,
   fillOpacity = 1,
   backdropBlur = "11px",
@@ -157,11 +158,14 @@ export default function VectorLogotype({
   glowColor = "white",
   glowOpacity = 0.3,
   glowAngle = 45,
+  invertGlow = true,
   translateX = 0,
   translateY = 0,
 }: VectorLogotypeProps) {
   // Calculate glow offset based on angle (in degrees)
-  const angleRad = (glowAngle * Math.PI) / 180;
+  // If invertGlow is true, invert the direction by adding 180 degrees
+  const effectiveAngle = invertGlow ? glowAngle + 180 : glowAngle;
+  const angleRad = (effectiveAngle * Math.PI) / 180;
   const glowDx1 = Math.cos(angleRad) * 1.31697;
   const glowDy1 = Math.sin(angleRad) * 1.79586;
   const glowDx2 = Math.cos(angleRad) * 2.32229;

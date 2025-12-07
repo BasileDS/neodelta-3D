@@ -1,7 +1,6 @@
 import { Canvas } from '@react-three/fiber'
 import { useState } from 'react'
 import PenroseObj from './components/3d/PenroseObj'
-import CursorGlow from './components/3d/CursorGlow'
 import ResettableControls from './components/3d/ResettableControls'
 import { ControlPanel } from './components/ui/ControlPanel'
 import type { SceneProps, LightSettings } from './types'
@@ -13,6 +12,8 @@ export default function Scene({
   enableRotation = false,
   enableDynamicGlow,
   setEnableDynamicGlow,
+  invertGlow,
+  setInvertGlow,
   setEnableRotation,
   enablePositioning,
   setEnablePositioning,
@@ -66,7 +67,6 @@ export default function Scene({
         style={{ touchAction: 'none' }}
       >
         <ambientLight intensity={1} />
-        <CursorGlow mousePos={mousePos} />
         <directionalLight
           position={lights.directional.position}
           intensity={lights.directional.intensity}
@@ -145,6 +145,8 @@ export default function Scene({
           logoControls={logoControls}
           enableDynamicGlow={enableDynamicGlow}
           setEnableDynamicGlow={setEnableDynamicGlow}
+          invertGlow={invertGlow}
+          setInvertGlow={setInvertGlow}
           enableRotation={enableRotation}
           setEnableRotation={setEnableRotation}
           enablePositioning={enablePositioning}

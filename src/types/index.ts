@@ -57,6 +57,8 @@ export interface SceneProps {
   // Interactive effects controls
   enableDynamicGlow: boolean
   setEnableDynamicGlow: (value: boolean) => void
+  invertGlow: boolean
+  setInvertGlow: (value: boolean) => void
   setEnableRotation: (value: boolean) => void
   enablePositioning: boolean
   setEnablePositioning: (value: boolean) => void

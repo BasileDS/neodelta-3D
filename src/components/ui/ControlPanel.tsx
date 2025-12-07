@@ -15,6 +15,8 @@ interface ControlPanelProps {
   // Interactive effects
   enableDynamicGlow: boolean
   setEnableDynamicGlow: (value: boolean) => void
+  invertGlow: boolean
+  setInvertGlow: (value: boolean) => void
   enableRotation: boolean
   setEnableRotation: (value: boolean) => void
   enablePositioning: boolean
@@ -46,6 +48,8 @@ export function ControlPanel({
   logoControls,
   enableDynamicGlow,
   setEnableDynamicGlow,
+  invertGlow,
+  setInvertGlow,
   enableRotation,
   setEnableRotation,
   enablePositioning,
@@ -150,6 +154,18 @@ export function ControlPanel({
             />
             <span>Lueur dynamique</span>
           </label>
+
+          {enableDynamicGlow && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px', marginLeft: '20px', fontSize: '9px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={invertGlow}
+                onChange={(e) => setInvertGlow(e.target.checked)}
+                style={{ cursor: 'pointer' }}
+              />
+              <span>Inverser la lueur</span>
+            </label>
+          )}
 
           <label style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px', fontSize: '9px', cursor: 'pointer' }}>
             <input

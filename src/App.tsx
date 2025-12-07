@@ -3,6 +3,7 @@ import type React from 'react'
 import './App.css'
 import Scene from './Scene'
 import VectorLogotype from './components/vector/VectorLogotype'
+import CursorGlow from './components/ui/CursorGlow'
 import { useMousePosition } from './hooks/useMousePosition'
 
 const title = {
@@ -26,6 +27,7 @@ function App() {
 
   // Interactive effects state
   const [enableDynamicGlow, setEnableDynamicGlow] = useState(true)
+  const [invertGlow, setInvertGlow] = useState(true)
   const [enableRotation, setEnableRotation] = useState(true)
   const [enablePositioning, setEnablePositioning] = useState(true)
   const [displacementCoeff, setDisplacementCoeff] = useState(0.03)
@@ -63,8 +65,25 @@ function App() {
     ? (mousePos.y - centerY) * displacementCoeff
     : 0
 
+  // Cursor glow settings
+  const [cursorGlowColor] = useState('#00a2ffff')
+  const [cursorGlowWidth] = useState(50) // Width in vw
+  const [cursorGlowHeight] = useState(90) // Height in vh
+  const [cursorGlowOpacity] = useState(0.05)
+  const [enableCursorGlow] = useState(true)
+  const [cursorGlowDisplacement] = useState(1) // 1 = follows cursor exactly
+
   return (
     <>
+      <CursorGlow
+        mousePos={mousePos}
+        color={cursorGlowColor}
+        width={cursorGlowWidth}
+        height={cursorGlowHeight}
+        opacity={cursorGlowOpacity}
+        enabled={enableCursorGlow}
+        displacementCoeff={cursorGlowDisplacement}
+      />
       <h1 style={title}>Neodelta <em>Playground</em></h1>
       <Scene
         logoControls={{
@@ -90,6 +109,8 @@ function App() {
         enableRotation={enableRotation}
         enableDynamicGlow={enableDynamicGlow}
         setEnableDynamicGlow={setEnableDynamicGlow}
+        invertGlow={invertGlow}
+        setInvertGlow={setInvertGlow}
         setEnableRotation={setEnableRotation}
         enablePositioning={enablePositioning}
         setEnablePositioning={setEnablePositioning}
@@ -112,6 +133,7 @@ function App() {
           glowColor={glowColor}
           glowOpacity={glowOpacity}
           glowAngle={glowAngle}
+          invertGlow={invertGlow}
           translateX={translateX}
           translateY={translateY}
         />
