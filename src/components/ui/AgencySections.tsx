@@ -2,20 +2,32 @@ import './AgencySections.css'
 
 const AgencySections = () => {
   return (
-    <div className="agency-sections">
+    <div className="agency-sections" style={{
+      position: 'relative',
+      zIndex: 5,
+      pointerEvents: 'auto'
+    }}>
+      {/* Empty 3D Viewing Section */}
+      <section className="view-3d-section" style={{
+        height: '100vh',
+        width: '100%',
+        pointerEvents: 'none'
+      }}>
+      </section>
+
       {/* Hero Section */}
-      <section className="hero-section">
+      <section className="hero-section" id="hero">
         <div className="hero-content">
           <h2 className="hero-title">Faux contenu pour tester les effet au scroll</h2>
           <p className="hero-subtitle">
-            Neodelta est une agence web spécialisée dans la création d'expériences 3D immersives et de solutions digitales innovantes
+            Faux contenu pour tester les effet au scroll
           </p>
-          <button className="cta-button">Découvrir nos services</button>
+          <button className="cta-button">bouton</button>
         </div>
       </section>
 
       {/* Services Section */}
-      <section className="services-section">
+      <section className="services-section" id="services">
         <div className="section-container">
           <h2 className="section-title">Nos Services</h2>
           <div className="services-grid">
@@ -54,7 +66,7 @@ const AgencySections = () => {
       </section>
 
       {/* Portfolio Section */}
-      <section className="portfolio-section">
+      <section className="portfolio-section" id="portfolio">
         <div className="section-container">
           <h2 className="section-title">Nos Réalisations</h2>
           <div className="portfolio-grid">
@@ -99,7 +111,7 @@ const AgencySections = () => {
       </section>
 
       {/* About Section */}
-      <section className="about-section">
+      <section className="about-section" id="about">
         <div className="section-container">
           <div className="about-content">
             <div className="about-text">
@@ -135,7 +147,7 @@ const AgencySections = () => {
       </section>
 
       {/* Contact Section */}
-      <section className="contact-section">
+      <section className="contact-section" id="contact">
         <div className="section-container">
           <h2 className="section-title">Contactez-nous</h2>
           <p className="contact-subtitle">Un projet en tête ? Discutons-en ensemble</p>

@@ -125,11 +125,14 @@ export default function Scene({
     <div style={{
       width: '100vw',
       height: '100vh',
-      position: 'relative',
+      position: 'fixed',
+      top: 0,
+      left: 0,
       overflow: 'hidden',
       touchAction: 'none',
       zIndex: isRotated ? 10 : 0,
-      transition: 'z-index 0.4s'
+      transition: 'z-index 0.4s',
+      pointerEvents: isRotated ? 'auto' : 'none'
     }}>
       <Canvas
         camera={{ zoom: 50, position: [0, 0, 20], fov: 35 }}

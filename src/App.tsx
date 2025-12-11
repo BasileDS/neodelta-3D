@@ -9,6 +9,7 @@ import AgencySections from './components/ui/AgencySections'
 import { ControlPanel } from './components/ui/ControlPanel'
 import { useMousePosition } from './hooks/useMousePosition'
 import { useScrollAnimation, defaultScrollConfig } from './hooks/useScrollAnimation'
+import { useSectionPosition } from './hooks/useSectionPosition'
 import type { ScrollAnimationConfig, LightSettings } from './types'
 
 const title = {
@@ -34,14 +35,17 @@ function App() {
   // Interactive effects state
   const [enableDynamicGlow, setEnableDynamicGlow] = useState(true)
   const [invertGlow, setInvertGlow] = useState(true)
-  const [enableRotation, setEnableRotation] = useState(true)
+  const [enableRotation, setEnableRotation] = useState(false)
   const [enablePositioning, setEnablePositioning] = useState(true)
-  const [displacementCoeff, setDisplacementCoeff] = useState(0.03)
+  const [displacementCoeff, setDisplacementCoeff] = useState(0.01)
   const [rotationCoeff, setRotationCoeff] = useState(0.3)
   const [showControls, setShowControls] = useState(false)
   
   // Rotation toggle state
   const [isRotated, setIsRotated] = useState(false)
+  
+  // Control if effects should be disabled when isRotated is true
+  const [disableEffectsWhenRotated, setDisableEffectsWhenRotated] = useState(true)
   
   // Vector text rotation parameters
   const [enableVectorRotation, setEnableVectorRotation] = useState(true)
@@ -54,6 +58,10 @@ function App() {
   const [scrollConfig, setScrollConfig] = useState<ScrollAnimationConfig>(defaultScrollConfig)
   const scrollValues = useScrollAnimation(scrollConfig)
   
+  // Section-based positioning
+  const [enableSectionPositioning] = useState(true)
+  const sectionPosition = useSectionPosition(0.08)
+  
   // Use custom mouse position hook
   const { mousePos } = useMousePosition(showControls)
 
@@ -64,24 +72,24 @@ function App() {
   // Calculate angle from center to mouse (in degrees)
   const deltaX = mousePos.x - centerX
   const deltaY = mousePos.y - centerY
-  const glowAngle = enableDynamicGlow && !isRotated
+  const glowAngle = enableDynamicGlow && !(isRotated && disableEffectsWhenRotated)
     ? Math.atan2(deltaY, deltaX) * (180 / Math.PI)
     : 45
 
   // Calculate rotation based on mouse X and Y position
   // X axis rotation based on mouse Y, Y axis rotation based on mouse X
-  const rotationX = enableRotation && !isRotated
+  const rotationX = enableRotation && !(isRotated && disableEffectsWhenRotated)
     ? ((mousePos.y - centerY) / centerY) * rotationCoeff * 100
     : 0
-  const rotationY = enableRotation && !isRotated
+  const rotationY = enableRotation && !(isRotated && disableEffectsWhenRotated)
     ? ((mousePos.x - centerX) / centerX) * rotationCoeff * 100
     : 0
 
   // Calculate positioning offset based on mouse position
-  const translateX = enablePositioning && !isRotated
+  const translateX = enablePositioning && !(isRotated && disableEffectsWhenRotated)
     ? (mousePos.x - centerX) * displacementCoeff
     : 0
-  const translateY = enablePositioning && !isRotated
+  const translateY = enablePositioning && !(isRotated && disableEffectsWhenRotated)
     ? (mousePos.y - centerY) * displacementCoeff
     : 0
 
@@ -93,6 +101,9 @@ function App() {
   const [enableCursorGlow] = useState(true)
   const [cursorGlowDisplacement] = useState(1) // 1 = follows cursor exactly
 
+  // Toggle section positioning mode
+  const [useSectionMode, setUseSectionMode] = useState(false)
+  
   // 3D Scene settings
   const [lights, setLights] = useState<LightSettings>({
     directional: {
@@ -128,10 +139,25 @@ function App() {
   const [modelScale, setModelScale] = useState(76.1)
   
   // Animation parameters for 3D logo
-  const [modelLerpFactor, setModelLerpFactor] = useState(0.07) // Smoothness of rotation (0.01-1)
+  const [modelLerpFactor, setModelLerpFactor] = useState(0.47) // Smoothness of rotation (0.01-1)
   const [activeRotation, setActiveRotation] = useState<[number, number, number]>([0, Math.PI, 0]) // Rotation added when active (radians)
   const [activeTranslation, setActiveTranslation] = useState<[number, number, number]>([15.9, 1.6, 0]) // Translation added when active
   const [activeScale, setActiveScale] = useState(2.1) // Scale multiplier when active (1 = no change)
+  
+  // Separate lerp factors for activation and deactivation
+  const [activationLerpFactor, setActivationLerpFactor] = useState(0.09) // Smoothness when activating rotation
+  const [deactivationLerpFactor, setDeactivationLerpFactor] = useState(0.24) // Smoothness when deactivating rotation
+  
+  // Determine final values based on mode
+  const finalModelPosition = (useSectionMode && enableSectionPositioning)
+    ? sectionPosition.model.position
+    : modelPosition
+  const finalModelRotation = (useSectionMode && enableSectionPositioning)
+    ? sectionPosition.model.rotation
+    : modelRotation
+  const finalModelScale = (useSectionMode && enableSectionPositioning)
+    ? sectionPosition.model.scale
+    : modelScale
 
   return (
     <>
@@ -173,7 +199,36 @@ function App() {
           e.currentTarget.style.backgroundColor = isRotated ? 'rgba(255, 165, 0, 0.85)' : 'rgba(0, 0, 0, 0.85)'
         }}
       >
-        {isRotated ? 'Active' : 'Base'}
+        {isRotated ? 'Annuler l\'animation' : 'Appliquer l\'animation'}
+      </button>
+      
+      {/* Section Mode Toggle Button */}
+      <button
+        onClick={() => setUseSectionMode(!useSectionMode)}
+        style={{
+          position: 'fixed',
+          top: '1rem',
+          right: '23rem',
+          backgroundColor: useSectionMode ? 'rgba(0, 162, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)',
+          color: 'white',
+          border: '1px solid #555',
+          borderRadius: '8px',
+          padding: '10px 15px',
+          cursor: 'pointer',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          zIndex: 1001,
+          transition: 'all 0.3s',
+          fontFamily: 'Arial, sans-serif'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = useSectionMode ? 'rgba(0, 162, 255, 0.95)' : 'rgba(0, 0, 0, 0.95)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = useSectionMode ? 'rgba(0, 162, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)'
+        }}
+      >
+        {useSectionMode ? 'Mode Section: ON' : 'Mode Section: OFF'}
       </button>
       
       {/* Parameters Toggle Button */}
@@ -272,6 +327,12 @@ function App() {
           setActiveTranslation={setActiveTranslation}
           activeScale={activeScale}
           setActiveScale={setActiveScale}
+          activationLerpFactor={activationLerpFactor}
+          setActivationLerpFactor={setActivationLerpFactor}
+          deactivationLerpFactor={deactivationLerpFactor}
+          setDeactivationLerpFactor={setDeactivationLerpFactor}
+          disableEffectsWhenRotated={disableEffectsWhenRotated}
+          setDisableEffectsWhenRotated={setDisableEffectsWhenRotated}
         />
       )}
 
@@ -284,10 +345,10 @@ function App() {
         isRotated={isRotated}
         lights={lights}
         modelColor={modelColor}
-        modelPosition={modelPosition}
-        modelRotation={modelRotation}
-        modelScale={modelScale}
-        modelLerpFactor={modelLerpFactor}
+        modelPosition={finalModelPosition}
+        modelRotation={finalModelRotation}
+        modelScale={finalModelScale}
+        modelLerpFactor={isRotated ? activationLerpFactor : deactivationLerpFactor}
         activeRotation={activeRotation}
         activeTranslation={activeTranslation}
         activeScale={activeScale}
@@ -295,12 +356,20 @@ function App() {
       <div
         className='square'
         style={{
-          opacity: scrollConfig.enableScrollOpacity ? scrollValues.opacity : 1,
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          opacity: (useSectionMode && enableSectionPositioning)
+            ? sectionPosition.vector.opacity
+            : (scrollConfig.enableScrollOpacity ? scrollValues.opacity : 1),
           transform: (isRotated && enableVectorRotation)
-            ? `perspective(${vectorPerspective}px) rotateY(${vectorRotateY}deg) translateZ(${vectorTranslateZ}px) rotateX(${vectorRotateX}deg)`
-            : 'none',
-          transition: 'transform 1.2s cubic-bezier(0.25, 0.1, 0.25, 1)',
+            ? `translate(-50%, -50%) perspective(${vectorPerspective}px) rotateY(${vectorRotateY}deg) translateZ(${vectorTranslateZ}px) rotateX(${vectorRotateX}deg)`
+            : (useSectionMode && enableSectionPositioning)
+              ? `translate(calc(-50% + ${sectionPosition.vector.position.x}vw), calc(-50% + ${sectionPosition.vector.position.y}vh)) scale(${sectionPosition.vector.scale}) rotate(${sectionPosition.vector.rotation}deg)`
+              : 'translate(-50%, -50%)',
+          transition: 'transform 1.2s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.8s ease',
           zIndex: isRotated ? 0 : 1,
+          pointerEvents: 'none'
         }}
       >
         <VectorLogotype
@@ -308,7 +377,11 @@ function App() {
           strokeWidth={strokeWidth}
           strokeOpacity={strokeOpacity}
           fillOpacity={fillOpacity}
-          backdropBlur={isRotated ? '0px' : backdropBlur}
+          backdropBlur={(isRotated && disableEffectsWhenRotated)
+            ? '0px'
+            : ((useSectionMode && enableSectionPositioning && !sectionPosition.effects.blurBackground)
+              ? '0px'
+              : backdropBlur)}
           blendMode={blendMode}
           glowColor={glowColor}
           glowOpacity={glowOpacity}

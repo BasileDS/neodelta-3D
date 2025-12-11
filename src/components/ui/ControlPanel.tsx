@@ -39,6 +39,9 @@ interface ConfigurationData {
   activeRotation?: [number, number, number]
   activeTranslation?: [number, number, number]
   activeScale?: number
+  activationLerpFactor?: number
+  deactivationLerpFactor?: number
+  disableEffectsWhenRotated?: boolean
   
   // Scroll Animation
   scrollAnimationConfig?: ScrollAnimationConfig
@@ -110,6 +113,16 @@ interface ControlPanelProps {
   setActiveTranslation: (value: [number, number, number]) => void
   activeScale: number
   setActiveScale: (value: number) => void
+  
+  // Separate lerp factors for activation and deactivation
+  activationLerpFactor: number
+  setActivationLerpFactor: (value: number) => void
+  deactivationLerpFactor: number
+  setDeactivationLerpFactor: (value: number) => void
+  
+  // Control if effects should be disabled when isRotated is true
+  disableEffectsWhenRotated: boolean
+  setDisableEffectsWhenRotated: (value: boolean) => void
 }
 
 /**
@@ -161,7 +174,13 @@ export function ControlPanel({
   activeTranslation,
   setActiveTranslation,
   activeScale,
-  setActiveScale
+  setActiveScale,
+  activationLerpFactor,
+  setActivationLerpFactor,
+  deactivationLerpFactor,
+  setDeactivationLerpFactor,
+  disableEffectsWhenRotated,
+  setDisableEffectsWhenRotated
 }: ControlPanelProps) {
   const [exportSuccess, setExportSuccess] = useState(false)
   const [importSuccess, setImportSuccess] = useState(false)
@@ -230,6 +249,9 @@ export function ControlPanel({
       activeRotation,
       activeTranslation,
       activeScale,
+      activationLerpFactor,
+      deactivationLerpFactor,
+      disableEffectsWhenRotated,
       
       // Vector text rotation
       enableVectorRotation,
@@ -297,6 +319,9 @@ export function ControlPanel({
         if (config.activeRotation !== undefined) setActiveRotation(config.activeRotation)
         if (config.activeTranslation !== undefined) setActiveTranslation(config.activeTranslation)
         if (config.activeScale !== undefined) setActiveScale(config.activeScale)
+        if (config.activationLerpFactor !== undefined) setActivationLerpFactor(config.activationLerpFactor)
+        if (config.deactivationLerpFactor !== undefined) setDeactivationLerpFactor(config.deactivationLerpFactor)
+        if (config.disableEffectsWhenRotated !== undefined) setDisableEffectsWhenRotated(config.disableEffectsWhenRotated)
 
         // Apply vector text rotation settings
         if (config.enableVectorRotation !== undefined) setEnableVectorRotation(config.enableVectorRotation)
@@ -974,10 +999,21 @@ export function ControlPanel({
             Paramètres d'Animation
           </div>
           
-          {/* Lerp Factor (Smoothness) */}
+          {/* Toggle for disabling effects when rotated */}
+          <label style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '12px', fontSize: '9px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={disableEffectsWhenRotated}
+              onChange={(e) => setDisableEffectsWhenRotated(e.target.checked)}
+              style={{ cursor: 'pointer' }}
+            />
+            <span>Désactiver les effets en rotation</span>
+          </label>
+          
+          {/* Lerp Factor (Smoothness) - Legacy control for general use */}
           <div style={{ marginBottom: '10px' }}>
             <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
-              <span>Fluidité Rotation</span>
+              <span>Fluidité Générale</span>
               <input
                 type="number"
                 step="0.01"
@@ -997,6 +1033,58 @@ export function ControlPanel({
             />
             <div style={{ fontSize: '8px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '2px' }}>
               Plus bas = plus fluide (0.01-1)
+            </div>
+          </div>
+          
+          {/* Activation Lerp Factor */}
+          <div style={{ marginBottom: '10px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
+              <span>Fluidité Activation</span>
+              <input
+                type="number"
+                step="0.01"
+                value={activationLerpFactor}
+                onChange={(e) => setActivationLerpFactor(Number(e.target.value))}
+                style={{ width: '50px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+              />
+            </label>
+            <input
+              type="range"
+              min="0.01"
+              max="1"
+              step="0.01"
+              value={activationLerpFactor}
+              onChange={(e) => setActivationLerpFactor(Number(e.target.value))}
+              style={{ width: '100%', cursor: 'pointer' }}
+            />
+            <div style={{ fontSize: '8px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '2px' }}>
+              Fluidité lors de l'activation de la rotation
+            </div>
+          </div>
+          
+          {/* Deactivation Lerp Factor */}
+          <div style={{ marginBottom: '10px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '9px' }}>
+              <span>Fluidité Désactivation</span>
+              <input
+                type="number"
+                step="0.01"
+                value={deactivationLerpFactor}
+                onChange={(e) => setDeactivationLerpFactor(Number(e.target.value))}
+                style={{ width: '50px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px', padding: '2px 4px', fontSize: '9px' }}
+              />
+            </label>
+            <input
+              type="range"
+              min="0.01"
+              max="1"
+              step="0.01"
+              value={deactivationLerpFactor}
+              onChange={(e) => setDeactivationLerpFactor(Number(e.target.value))}
+              style={{ width: '100%', cursor: 'pointer' }}
+            />
+            <div style={{ fontSize: '8px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '2px' }}>
+              Fluidité lors de la désactivation de la rotation
             </div>
           </div>
           
@@ -1167,10 +1255,13 @@ export function ControlPanel({
           {/* Reset Button for Animation Params */}
           <button
             onClick={() => {
-              setModelLerpFactor(0.1)
+              setModelLerpFactor(0.07)
+              setActivationLerpFactor(0.07)
+              setDeactivationLerpFactor(0.07)
               setActiveRotation([0, Math.PI, 0])
-              setActiveTranslation([0, 0, 0])
-              setActiveScale(1)
+              setActiveTranslation([15.9, 1.6, 0])
+              setActiveScale(2.1)
+              setDisableEffectsWhenRotated(true)
             }}
             style={{
               width: '100%',
