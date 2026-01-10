@@ -8,62 +8,21 @@ function combineRotations(
   baseRotation: [number, number, number],
   mouseRotationX: number,
   mouseRotationY: number,
-  enableMouseRotation: boolean,
-  scrollRotation: [number, number, number],
-  enableScrollRotation: boolean
+  enableMouseRotation: boolean
 ): [number, number, number] {
-  let result: [number, number, number] = [...baseRotation]
-  
-  if (enableMouseRotation) {
-    result = [
-      result[0] + (mouseRotationX * Math.PI / 180),
-      result[1] + (mouseRotationY * Math.PI / 180),
-      result[2]
-    ]
-  }
-  
-  if (enableScrollRotation) {
-    result = [
-      result[0] + scrollRotation[0],
-      result[1] + scrollRotation[1],
-      result[2] + scrollRotation[2]
-    ]
-  }
-  
-  return result
-}
+  if (!enableMouseRotation) return baseRotation
 
-// Helper function to combine positions
-function combinePositions(
-  basePosition: [number, number, number],
-  scrollPosition: [number, number, number],
-  enableScrollPosition: boolean
-): [number, number, number] {
-  if (!enableScrollPosition) return basePosition
-  
   return [
-    basePosition[0] + scrollPosition[0],
-    basePosition[1] + scrollPosition[1],
-    basePosition[2] + scrollPosition[2]
+    baseRotation[0] + (mouseRotationX * Math.PI / 180),
+    baseRotation[1] + (mouseRotationY * Math.PI / 180),
+    baseRotation[2]
   ]
-}
-
-// Helper function to combine scales
-function combineScales(
-  baseScale: number,
-  scrollScale: number,
-  enableScrollScale: boolean
-): number {
-  if (!enableScrollScale) return baseScale
-  return baseScale * scrollScale
 }
 
 export default function Scene({
   mouseRotationX = 0,
   mouseRotationY = 0,
   enableRotation = false,
-  scrollConfig,
-  scrollValues,
   isRotated,
   lights,
   modelColor,
@@ -81,11 +40,9 @@ export default function Scene({
     modelRotation,
     mouseRotationX,
     mouseRotationY,
-    enableRotation,
-    scrollValues.rotation,
-    scrollConfig.enableScrollRotation
+    enableRotation
   )
-  
+
   // Add active rotation when isRotated is true
   if (isRotated) {
     finalRotation = [
@@ -94,13 +51,9 @@ export default function Scene({
       finalRotation[2] + activeRotation[2]
     ]
   }
-  
-  let finalPosition = combinePositions(
-    modelPosition,
-    scrollValues.position,
-    scrollConfig.enableScrollPosition
-  )
-  
+
+  let finalPosition = [...modelPosition] as [number, number, number]
+
   // Add active translation when isRotated is true
   if (isRotated) {
     finalPosition = [
@@ -109,13 +62,9 @@ export default function Scene({
       finalPosition[2] + activeTranslation[2]
     ]
   }
-  
-  let finalScale = combineScales(
-    modelScale,
-    scrollValues.scale,
-    scrollConfig.enableScrollScale
-  )
-  
+
+  let finalScale = modelScale
+
   // Apply active scale multiplier when isRotated is true
   if (isRotated) {
     finalScale = finalScale * activeScale

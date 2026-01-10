@@ -1,8 +1,4 @@
 import type React from 'react'
-import type { ScrollAnimationConfig, ScrollAnimationValues } from '../hooks/useScrollAnimation'
-
-// Re-export scroll animation types for convenience
-export type { ScrollAnimationConfig, ScrollAnimationValues }
 
 /**
  * Point light configuration settings
@@ -59,9 +55,6 @@ export interface SceneProps {
   mouseRotationX?: number
   mouseRotationY?: number
   enableRotation?: boolean
-  // Scroll animation props
-  scrollConfig: ScrollAnimationConfig
-  scrollValues: ScrollAnimationValues
   // Rotation toggle
   isRotated: boolean
   // Light and model settings
